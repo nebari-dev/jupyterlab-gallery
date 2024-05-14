@@ -1,0 +1,15 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: v4.3.0
+_src_path: https://github.com/jupyterlab/extension-template
+author_email: internal-it@quansight.com
+author_name: Nebari development team
+has_binder: true
+has_settings: true
+kind: server
+labextension_name: jupyterlab-gallery
+project_short_description: A JupyterLab gallery extension for presenting and downloading
+    examples from remote repositories
+python_name: jupyterlab_gallery
+repository: https://github.com/nebari-dev/jupyterlab-gallery
+test: true
+

@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab-gallery",
+  "description": "jupyterlab-gallery settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
