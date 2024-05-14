@@ -1,10 +1,11 @@
-# jupyterlab_gallery
+# jupyterlab-gallery
 
 [![Github Actions Status](https://github.com/nebari-dev/jupyterlab-gallery/workflows/Build/badge.svg)](https://github.com/nebari-dev/jupyterlab-gallery/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nebari-dev/jupyterlab-gallery/main?urlpath=lab)
+
 A JupyterLab gallery extension for presenting and downloading examples from remote repositories
 
-This extension is composed of a Python package named `jupyterlab_gallery`
+This extension is composed of a Python package named `jupyterlab-gallery`
 for the server extension and a NPM package named `jupyterlab-gallery`
 for the frontend extension.
 
@@ -17,7 +18,7 @@ for the frontend extension.
 To install the extension, execute:
 
 ```bash
-pip install jupyterlab_gallery
+pip install jupyterlab-gallery
 ```
 
 ## Uninstall
@@ -25,7 +26,7 @@ pip install jupyterlab_gallery
 To remove the extension, execute:
 
 ```bash
-pip uninstall jupyterlab_gallery
+pip uninstall jupyterlab-gallery
 ```
 
 ## Troubleshoot
@@ -56,7 +57,7 @@ The `jlpm` command is JupyterLab's pinned version of
 
 ```bash
 # Clone the repo to your local environment
-# Change directory to the jupyterlab_gallery directory
+# Change directory to the jupyterlab-gallery directory
 # Install package in development mode
 pip install -e ".[test]"
 # Link your development version of the extension with JupyterLab
@@ -89,7 +90,7 @@ jupyter lab build --minimize=False
 ```bash
 # Server extension must be manually disabled in develop mode
 jupyter server extension disable jupyterlab_gallery
-pip uninstall jupyterlab_gallery
+pip uninstall jupyterlab-gallery
 ```
 
 In development mode, you will also need to remove the symlink created by `jupyter labextension develop`
@@ -113,7 +114,7 @@ jupyter labextension develop . --overwrite
 To execute them, run:
 
 ```sh
-pytest -vv -r ap --cov jupyterlab_gallery
+pytest -vv -r ap --cov jupyterlab-gallery
 ```
 
 #### Frontend tests
