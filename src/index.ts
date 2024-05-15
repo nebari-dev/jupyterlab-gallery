@@ -8,6 +8,7 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { requestAPI } from './handler';
 import { GalleryWidget } from './gallery';
 import { galleryIcon } from './icons';
+import { IExhibitReply } from './types';
 
 /**
  * Initialization data for the jupyterlab-gallery extension.
@@ -28,13 +29,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     translator = translator ?? nullTranslator;
     const trans = translator.load('jupyterlab-gallery');
-    const sidebar = new GalleryWidget();
+    const widget = new GalleryWidget();
 
-    sidebar.id = 'jupyterlab-gallery:sidebar';
-    sidebar.title.icon = galleryIcon;
-    sidebar.title.caption = trans.__('Gallery');
-    sidebar.show();
-    app.shell.add(sidebar, 'left', { rank: 850 });
+    // TODO: should we put it in the sidebar, or in the main area?
+    // add the widget to sidebar before waiting for server reply to reduce UI jitter
+    widget.id = 'jupyterlab-gallery:sidebar';
+    widget.title.icon = galleryIcon;
+    widget.title.caption = trans.__('Gallery');
+    widget.show();
+    app.shell.add(widget, 'left', { rank: 850 });
 
     try {
       const settings = await settingRegistry.load(plugin.id);
@@ -44,15 +47,14 @@ const plugin: JupyterFrontEndPlugin<void> = {
       return;
     }
 
-    requestAPI<any>('get-example')
-      .then(data => {
-        console.log(data);
-      })
-      .catch(reason => {
-        console.error(
-          `The jupyterlab_gallery server extension appears to be missing.\n${reason}`
-        );
-      });
+    try {
+      const data = await requestAPI<IExhibitReply>('exhibits');
+      widget.exhibits = data;
+    } catch (reason) {
+      console.error(
+        `The jupyterlab_gallery server extension appears to be missing.\n${reason}`
+      );
+    }
   }
 };
 
