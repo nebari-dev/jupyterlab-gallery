@@ -13,12 +13,12 @@ exhibits = [
         "git": "git@github.com:nebari-dev/nebari.git",
         "repository": "https://github.com/nebari-dev/nebari/",
         # "documentation": "https://github.com/nebari-dev/nebari/",
-        "title": "My test repository",
-        "description": "Test repository",
+        "title": "Nebari",
+        "description": "🪴 Nebari - your open source data science platform",
         # we may want to pin the repository to specific revision?
         # "revision": "2a2f2ee779ac21b70339da6551c2f6b0b00f6efe",
         # icon should be optional to allow for fast prototyping; we may want to allow allow relative paths and then host the assets from `/static`
-        "icon": "test.svg",
+        #"icon": "test.svg",
         # we may want to allow checking in a single directory from a repo
         # "path_in_repository": ""
         # ""
@@ -29,6 +29,11 @@ exhibits = [
 # we want an allow-list over block-list to avoid exposing PAT in case
 # if the author of the config makes a typo like `giit` instead of `git`.
 EXPOSED_EXHIBIT_KEYS = ["repository", "title", "description", "icon"]
+
+
+def extract_repository_owner(git_url: str) -> str:
+    fragments = git_url.strip("/").split("/")
+    return fragments[-2] if len(fragments) >= 2 else ''
 
 
 def extract_repository_name(git_url: str) -> str:
@@ -44,11 +49,16 @@ def prepare_exhibit(exhibit_config) -> dict:
     }
     clone_destination = Path("examples")
     repository_name = extract_repository_name(exhibit_config["git"])
+    repository_owner = extract_repository_owner(exhibit_config["repository"])
     local_path = clone_destination / repository_name
+
+    if "icon" not in exposed_config:
+        if exposed_config["repository"].startswith('https://github.com/'):
+            exposed_config["icon"] = f"https://opengraph.githubassets.com/1/{repository_owner}/{repository_name}"
 
     # we probably want a tratilet to configure path into which the exhibits should be cloned
     # path/relative/to/root/if/cloned
-    exposed_config["localPath"] = local_path  # e.g. "examples/nebari"
+    exposed_config["localPath"] = str(local_path)  # e.g. "examples/nebari"
     exposed_config["revision"] = "2a2f2ee779ac21b70339da6551c2f6b0b00f6efe"
     # timestamp from .git/FETCH_HEAD of the cloned repo
     exposed_config["lastUpdated"] = "2024-05-01"
@@ -58,6 +68,7 @@ def prepare_exhibit(exhibit_config) -> dict:
     # of the most recent tag and would be sufficient over sending the list of commits,
     # which can be long and delay the initialization.
     exposed_config["updatesAvailable"] = True
+    exposed_config["isCloned"] = local_path.exists()
     exposed_config["newestTag"] = "v3.2.5"
     exposed_config["updates"] = [
         {
@@ -93,10 +104,33 @@ class ExhibitsHandler(APIHandler):
         )
 
 
+# TODO: can we just use nbgitpuller?
+class DownloadHandler(APIHandler):
+    @tornado.web.authenticated
+    def get(self):
+      # TODO: return clone progress?
+      pass
+
+    @tornado.web.authenticated
+    def post(self):
+        # TODO: progress updates
+        self.finish(
+            json.dumps(
+                {
+                    "api_version": "1.0",
+                }
+            )
+        )
+
+
 def setup_handlers(web_app):
     host_pattern = ".*$"
 
     base_url = web_app.settings["base_url"]
     exhibits_pattern = url_path_join(base_url, "jupyterlab-gallery", "exhibits")
-    handlers = [(exhibits_pattern, ExhibitsHandler)]
+    download_pattern = url_path_join(base_url, "jupyterlab-gallery", "download")
+    handlers = [
+        (exhibits_pattern, ExhibitsHandler),
+        (download_pattern, DownloadHandler)
+    ]
     web_app.add_handlers(host_pattern, handlers)

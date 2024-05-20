@@ -3,3 +3,22 @@
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
+.jp-Exhibit {
+  border: 1px solid var(--jp-border-color1);
+  border-radius: 4px;
+  margin: 12px;
+  padding: 4px 8px;
+  max-width: 200px;
+}
+
+.jp-Exhibit-title {
+  margin: 2px 4px;
+}
+
+.jp-Exhibit-description {
+  padding: 2px;
+}
+
+.jp-Exhibit-icon {
+  max-width: 100%;
+}

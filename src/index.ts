@@ -4,11 +4,10 @@ import {
 } from '@jupyterlab/application';
 import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { IFileBrowserCommands } from '@jupyterlab/filebrowser';
 
-import { requestAPI } from './handler';
 import { GalleryWidget } from './gallery';
 import { galleryIcon } from './icons';
-import { IExhibitReply } from './types';
 
 /**
  * Initialization data for the jupyterlab-gallery extension.
@@ -19,17 +18,27 @@ const plugin: JupyterFrontEndPlugin<void> = {
     'A JupyterLab gallery extension for presenting and downloading examples from remote repositories',
   autoStart: true,
   requires: [ISettingRegistry],
-  optional: [ITranslator],
+  optional: [IFileBrowserCommands, ITranslator],
   activate: async (
     app: JupyterFrontEnd,
     settingRegistry: ISettingRegistry,
+    fileBrowserCommands: IFileBrowserCommands | null,
     translator: ITranslator | null
   ) => {
     console.log('JupyterLab extension jupyterlab-gallery is activated!');
 
     translator = translator ?? nullTranslator;
     const trans = translator.load('jupyterlab-gallery');
-    const widget = new GalleryWidget();
+    const widget = new GalleryWidget({
+      trans,
+      openPath: (path: string) => {
+        if (!fileBrowserCommands) {
+          // TODO: Notebook v7 support
+          throw Error('filebrowser not available');
+        }
+        app.commands.execute(fileBrowserCommands.openPath, { path });
+      }
+    });
 
     // TODO: should we put it in the sidebar, or in the main area?
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
@@ -45,15 +54,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
     } catch (reason) {
       console.error('Failed to load settings for jupyterlab-gallery.', reason);
       return;
-    }
-
-    try {
-      const data = await requestAPI<IExhibitReply>('exhibits');
-      widget.exhibits = data;
-    } catch (reason) {
-      console.error(
-        `The jupyterlab_gallery server extension appears to be missing.\n${reason}`
-      );
     }
   }
 };

@@ -10,8 +10,12 @@ export interface IExhibit {
   description: string;
   icon: string;
   // state from server
-  localPath: boolean;
+  id: number;
+  isCloned: boolean;
+  localPath: string;
   revision: string;
   lastUpdated: string;
   updatesAvailable: boolean;
+  state?: 'downloading';
+  downloadProgresss?: number;
 }
