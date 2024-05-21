@@ -27,6 +27,6 @@ def _load_jupyter_server_extension(server_app):
     server_app: jupyterlab.labapp.LabApp
         JupyterLab application instance
     """
-    setup_handlers(server_app.web_app)
+    setup_handlers(server_app.web_app, server_app)
     name = "jupyterlab_gallery"
     server_app.log.info(f"Registered {name} server extension")

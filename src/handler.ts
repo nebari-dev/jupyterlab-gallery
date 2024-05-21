@@ -44,3 +44,33 @@ export async function requestAPI<T>(
 
   return data;
 }
+
+export interface IStreamMessage {
+  output?: string;
+  phase: string;
+  exhibit_id: number;
+}
+
+export function eventStream(
+  endPoint = '',
+  onStream: (message: IStreamMessage) => void,
+  onError: (error: Event) => void
+) {
+  const settings = ServerConnection.makeSettings();
+  const requestUrl = URLExt.join(
+    settings.baseUrl,
+    'jupyterlab-gallery', // API Namespace
+    endPoint
+  );
+  const eventSource = new EventSource(requestUrl);
+  eventSource.addEventListener('message', event => {
+    const data = JSON.parse(event.data);
+    if (data.phase === 'finished' || data.phase === 'error') {
+      eventSource.close();
+    }
+    onStream(data);
+  });
+  eventSource.addEventListener('error', error => {
+    onError(error);
+  });
+}

@@ -1,20 +1,14 @@
 import * as React from 'react';
 import { ReactWidget, showErrorMessage } from '@jupyterlab/apputils';
 import { Button } from '@jupyterlab/ui-components';
+import { IStream, Stream } from '@lumino/signaling';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { IExhibit } from './types';
 import { IExhibitReply } from './types';
-import { requestAPI } from './handler';
+import { requestAPI, eventStream, IStreamMessage } from './handler';
 
 interface IActions {
-  download(exhibit: IExhibit): Promise<void>;
   open(exhibit: IExhibit): Promise<void>;
-  //update(exhibit: IExhibit): Promise<void>
-}
-
-interface IDownloadReply {
-  status: 'ok';
-  error: string;
 }
 
 export class GalleryWidget extends ReactWidget {
@@ -26,15 +20,6 @@ export class GalleryWidget extends ReactWidget {
     super();
     this._status = trans.__('Gallery loading...');
     this._actions = {
-      download: async (exhibit: IExhibit) => {
-        const reply = await requestAPI<IDownloadReply>('download', {
-          body: JSON.stringify({ exhibit }),
-          method: 'POST'
-        });
-        if (reply.status !== 'ok') {
-          showErrorMessage('Could not download', reply.error);
-        }
-      },
       open: async (exhibit: IExhibit) => {
         options.openPath(exhibit.localPath);
         // TODO: should it open the directory in the file browser?
@@ -42,6 +27,16 @@ export class GalleryWidget extends ReactWidget {
         //options.
       }
     };
+    eventStream(
+      'pull',
+      message => {
+        this._stream.emit(message);
+      },
+      error => {
+        // TODO
+        console.error(error);
+      }
+    );
     void this._load();
   }
 
@@ -71,18 +66,26 @@ export class GalleryWidget extends ReactWidget {
 
   render(): JSX.Element {
     if (this.exhibits) {
-      return <Gallery exhibits={this.exhibits} actions={this._actions} />;
+      return (
+        <Gallery
+          exhibits={this.exhibits}
+          actions={this._actions}
+          progressStream={this._stream}
+        />
+      );
     }
     return <div className="jp-Gallery jp-mod-loading">{this._status}</div>;
   }
   private _exhibits: IExhibit[] | null = null;
   private _status: string;
   private _actions: IActions;
+  private _stream: Stream<GalleryWidget, IStreamMessage> = new Stream(this);
 }
 
 function Gallery(props: {
   exhibits: IExhibit[];
   actions: IActions;
+  progressStream: IStream<GalleryWidget, IStreamMessage>;
 }): JSX.Element {
   return (
     <div className="jp-Gallery">
@@ -91,24 +94,58 @@ function Gallery(props: {
           key={exhibit.repository}
           exhibit={exhibit}
           actions={props.actions}
+          progressStream={props.progressStream}
         />
       ))}
     </div>
   );
 }
 
-function Exhibit(props: { exhibit: IExhibit; actions: IActions }): JSX.Element {
+function Exhibit(props: {
+  exhibit: IExhibit;
+  actions: IActions;
+  progressStream: IStream<GalleryWidget, IStreamMessage>;
+}): JSX.Element {
   const { exhibit, actions } = props;
+  const [progressMessage, setProgressMessage] = React.useState<string>();
+
+  React.useEffect(() => {
+    const listenToStreams = (_: GalleryWidget, message: IStreamMessage) => {
+      const exhibitId = message.exhibit_id;
+      if (exhibitId !== exhibit.id) {
+        return;
+      }
+      console.log('matched stream', message);
+      if (message.phase === 'error') {
+        showErrorMessage(
+          'Could not download',
+          message.output ?? 'Unknown error'
+        );
+      } else {
+        const { output, phase } = message;
+        setProgressMessage(output ? phase + ': ' + output : phase);
+      }
+    };
+    props.progressStream.connect(listenToStreams);
+    return () => {
+      props.progressStream.disconnect(listenToStreams);
+    };
+  });
   return (
     <div className="jp-Exhibit">
       <h4 className="jp-Exhibit-title">{exhibit.title}</h4>
       <img src={exhibit.icon} className="jp-Exhibit-icon" alt={exhibit.title} />
       <div className="jp-Exhibit-description">{exhibit.description}</div>
+      {progressMessage}
       <div className="jp-Exhibit-buttons">
         {!exhibit.isCloned ? (
           <Button
-            onClick={() => {
-              actions.download(exhibit);
+            onClick={async () => {
+              setProgressMessage('Downloading');
+              await requestAPI('pull', {
+                method: 'POST',
+                body: JSON.stringify({ exhibit_id: exhibit.id })
+              });
             }}
           >
             Setup up

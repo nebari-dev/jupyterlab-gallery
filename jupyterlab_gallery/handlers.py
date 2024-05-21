@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
+from .gitpuller import SyncHandlerBase
 import tornado
 
 
@@ -22,6 +23,12 @@ exhibits = [
         # we may want to allow checking in a single directory from a repo
         # "path_in_repository": ""
         # ""
+    },
+  {
+        "git": "git@github.com:nebari-dev/nebari-docker-images.git",
+        "repository": "https://github.com/nebari-dev/nebari-docker-images/",
+        "title": "Nebari docker images",
+        "description": "Nebari Docker images",
     }
 ]
 
@@ -43,7 +50,7 @@ def extract_repository_name(git_url: str) -> str:
     return fragment
 
 
-def prepare_exhibit(exhibit_config) -> dict:
+def prepare_exhibit(exhibit_config, exhibit_id: int) -> dict:
     exposed_config = {
         k: v for k, v in exhibit_config.items() if k in EXPOSED_EXHIBIT_KEYS
     }
@@ -78,6 +85,8 @@ def prepare_exhibit(exhibit_config) -> dict:
             "date": "date in format returned by git",
         }
     ]
+    exposed_config["id"] = exhibit_id
+
     return exposed_config
 
 
@@ -96,7 +105,8 @@ class ExhibitsHandler(APIHandler):
             json.dumps(
                 {
                     "exhibits": [
-                        prepare_exhibit(exhibit_config) for exhibit_config in exhibits
+                        prepare_exhibit(exhibit_config, exhibit_id=i)
+                        for i, exhibit_config in enumerate(exhibits)
                     ],
                     "api_version": "1.0",
                 }
@@ -104,33 +114,35 @@ class ExhibitsHandler(APIHandler):
         )
 
 
-# TODO: can we just use nbgitpuller?
-class DownloadHandler(APIHandler):
+class PullHandler(SyncHandlerBase):
     @tornado.web.authenticated
-    def get(self):
-      # TODO: return clone progress?
-      pass
-
-    @tornado.web.authenticated
-    def post(self):
-        # TODO: progress updates
-        self.finish(
-            json.dumps(
-                {
-                    "api_version": "1.0",
-                }
-            )
+    async def post(self):
+        data = self.get_json_body()
+        exhibit_id = data['exhibit_id']
+        raw_exhibit = exhibits[exhibit_id]
+        exhibit = prepare_exhibit(raw_exhibit, exhibit_id=exhibit_id)
+        return await super()._pull(
+            repo=raw_exhibit["git"],
+            exhibit_id=exhibit_id,
+            # branch
+            # depth
+            targetpath=exhibit["localPath"]
         )
 
+    @tornado.web.authenticated
+    async def get(self):
+        return await super()._stream()
 
-def setup_handlers(web_app):
+
+def setup_handlers(web_app, server_app):
     host_pattern = ".*$"
 
     base_url = web_app.settings["base_url"]
     exhibits_pattern = url_path_join(base_url, "jupyterlab-gallery", "exhibits")
-    download_pattern = url_path_join(base_url, "jupyterlab-gallery", "download")
+    download_pattern = url_path_join(base_url, "jupyterlab-gallery", "pull")
     handlers = [
         (exhibits_pattern, ExhibitsHandler),
-        (download_pattern, DownloadHandler)
+        (download_pattern, PullHandler)
     ]
+    web_app.settings['nbapp'] = server_app
     web_app.add_handlers(host_pattern, handlers)

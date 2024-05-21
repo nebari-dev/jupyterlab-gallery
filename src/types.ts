@@ -16,6 +16,4 @@ export interface IExhibit {
   revision: string;
   lastUpdated: string;
   updatesAvailable: boolean;
-  state?: 'downloading';
-  downloadProgresss?: number;
 }
