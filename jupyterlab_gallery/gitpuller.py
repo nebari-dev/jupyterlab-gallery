@@ -118,7 +118,9 @@ class SyncHandlerBase(JupyterHandler):
         # stream new messages as they are put on respective queues
         while True:
             empty_queues = 0
-            for exhibit_id, q in queues.items():
+            # copy to avoid error due to size change during iteration:
+            queues_view = queues.copy()
+            for exhibit_id, q in queues_view.items():
                 try:
                     progress = q.get_nowait()
                 except Empty:
@@ -146,6 +148,6 @@ class SyncHandlerBase(JupyterHandler):
                 self.last_message[exhibit_id] = msg
                 await self.emit(msg)
 
-            if empty_queues == len(queues):
+            if empty_queues == len(queues_view):
                 await gen.sleep(0.5)
 
