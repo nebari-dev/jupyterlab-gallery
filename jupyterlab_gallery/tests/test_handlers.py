@@ -1,11 +1,9 @@
 import json
 
 
-async def test_get_example(jp_fetch):
-    # When
-    response = await jp_fetch("jupyterlab-gallery", "get-example")
-
-    # Then
+async def test_exhibits(jp_fetch):
+    response = await jp_fetch("jupyterlab-gallery", "exhibits")
     assert response.code == 200
     payload = json.loads(response.body)
-    assert payload == {"data": "This is /jupyterlab-gallery/get-example endpoint!"}
+    assert payload["exhibits"]
+    assert payload["api_version"] == "1.0"
