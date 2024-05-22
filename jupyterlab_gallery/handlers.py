@@ -11,7 +11,8 @@ exhibits = [
     {
         # repository URL can include branch, PAT, basically anything that git will digest
         # TODO: if we embed PAT in repository URL we need another repository URL that is
-        "git": "git@github.com:nebari-dev/nebari.git",
+        #"git": "git@github.com:nebari-dev/nebari.git",
+        "git": "https://github.com/nebari-dev/nebari.git",
         "repository": "https://github.com/nebari-dev/nebari/",
         # "documentation": "https://github.com/nebari-dev/nebari/",
         "title": "Nebari",
@@ -25,7 +26,8 @@ exhibits = [
         # ""
     },
   {
-        "git": "git@github.com:nebari-dev/nebari-docker-images.git",
+        #"git": "git@github.com:nebari-dev/nebari-docker-images.git",
+        "git": "https://github.com/nebari-dev/nebari-docker-images.git",
         "repository": "https://github.com/nebari-dev/nebari-docker-images/",
         "title": "Nebari docker images",
         "description": "Nebari Docker images",
