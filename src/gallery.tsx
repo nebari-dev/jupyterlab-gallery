@@ -164,7 +164,9 @@ function Exhibit(props: {
             Open
           </Button>
         )}
-        {exhibit.updatesAvailable ? <Button>Update</Button> : null}
+        {exhibit.isCloned && exhibit.updatesAvailable ? (
+          <Button>Update</Button>
+        ) : null}
       </div>
     </div>
   );

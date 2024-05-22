@@ -74,7 +74,7 @@ def prepare_exhibit(exhibit_config, exhibit_id: int) -> dict:
     # a summary of the commits available, or tags available; possibly the name
     # of the most recent tag and would be sufficient over sending the list of commits,
     # which can be long and delay the initialization.
-    exposed_config["updatesAvailable"] = True
+    exposed_config["updatesAvailable"] = False
     exposed_config["isCloned"] = local_path.exists()
     exposed_config["newestTag"] = "v3.2.5"
     exposed_config["updates"] = [
