@@ -1,5 +1,6 @@
 # jupyterlab-gallery
 
+![Extension status](https://img.shields.io/badge/status-draft-critical 'Not yet working')
 [![Github Actions Status](https://github.com/nebari-dev/jupyterlab-gallery/workflows/Build/badge.svg)](https://github.com/nebari-dev/jupyterlab-gallery/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nebari-dev/jupyterlab-gallery/main?urlpath=lab)
 
