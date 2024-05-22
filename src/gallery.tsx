@@ -8,6 +8,7 @@ import { IExhibitReply } from './types';
 import { requestAPI, eventStream, IStreamMessage } from './handler';
 
 interface IActions {
+  download(exhibit: IExhibit): Promise<void>;
   open(exhibit: IExhibit): Promise<void>;
 }
 
@@ -25,6 +26,13 @@ export class GalleryWidget extends ReactWidget {
         // TODO: should it open the directory in the file browser?
         // should it also open a readme for this repository?
         //options.
+      },
+      download: async (exhibit: IExhibit) => {
+        await requestAPI('pull', {
+          method: 'POST',
+          body: JSON.stringify({ exhibit_id: exhibit.id })
+        });
+        await this._load();
       }
     };
     eventStream(
@@ -142,10 +150,7 @@ function Exhibit(props: {
           <Button
             onClick={async () => {
               setProgressMessage('Downloading');
-              await requestAPI('pull', {
-                method: 'POST',
-                body: JSON.stringify({ exhibit_id: exhibit.id })
-              });
+              await actions.download(exhibit);
             }}
           >
             Setup up
