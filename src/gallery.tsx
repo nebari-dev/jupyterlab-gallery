@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { ReactWidget, showErrorMessage } from '@jupyterlab/apputils';
-import { Button } from '@jupyterlab/ui-components';
-import { IStream, Stream } from '@lumino/signaling';
+import { Button, UseSignal } from '@jupyterlab/ui-components';
+import { Contents } from '@jupyterlab/services';
+import { IStream, Stream, Signal } from '@lumino/signaling';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { IExhibit } from './types';
 import { IExhibitReply } from './types';
@@ -16,8 +17,10 @@ export class GalleryWidget extends ReactWidget {
   constructor(options: {
     trans: TranslationBundle;
     openPath: (path: string) => void;
+    fileChanged: Contents.IManager['fileChanged'];
+    refreshFileBrowser: () => Promise<void>;
   }) {
-    const { trans } = options;
+    const { trans, fileChanged } = options;
     super();
     this._status = trans.__('Gallery loading...');
     this._actions = {
@@ -25,17 +28,35 @@ export class GalleryWidget extends ReactWidget {
         options.openPath(exhibit.localPath);
         // TODO: should it open the directory in the file browser?
         // should it also open a readme for this repository?
-        //options.
       },
       download: async (exhibit: IExhibit) => {
+        const done = new Promise<void>((resolve, reject) => {
+          this._stream.connect((_, e) => {
+            if (e.exhibit_id === exhibit.id) {
+              if (e.phase === 'finished') {
+                resolve();
+              } else if (e.phase === 'error') {
+                reject();
+              }
+            }
+          });
+        });
         await requestAPI('pull', {
           method: 'POST',
           body: JSON.stringify({ exhibit_id: exhibit.id })
         });
+        await done;
         await this._load();
+        await options.refreshFileBrowser();
       }
     };
-    eventStream(
+    // if user deletes a directory, reload the state
+    fileChanged.connect((_, args) => {
+      if (args.type === 'delete') {
+        this._load();
+      }
+    });
+    this._eventSource = eventStream(
       'pull',
       message => {
         this._stream.emit(message);
@@ -47,6 +68,13 @@ export class GalleryWidget extends ReactWidget {
     );
     void this._load();
   }
+
+  dispose() {
+    super.dispose();
+    this._eventSource.close();
+  }
+
+  private _eventSource: EventSource;
 
   private async _load() {
     try {
@@ -61,6 +89,7 @@ export class GalleryWidget extends ReactWidget {
     } catch (reason) {
       this._status = `jupyterlab_gallery server failed:\n${reason}`;
     }
+    this.update();
   }
 
   get exhibits(): IExhibit[] | null {
@@ -69,21 +98,34 @@ export class GalleryWidget extends ReactWidget {
 
   set exhibits(value: IExhibit[] | null) {
     this._exhibits = value;
-    this.update();
+  }
+
+  update() {
+    super.update();
+    this._update.emit();
   }
 
   render(): JSX.Element {
-    if (this.exhibits) {
-      return (
-        <Gallery
-          exhibits={this.exhibits}
-          actions={this._actions}
-          progressStream={this._stream}
-        />
-      );
-    }
-    return <div className="jp-Gallery jp-mod-loading">{this._status}</div>;
+    return (
+      <UseSignal signal={this._update}>
+        {() => {
+          if (this.exhibits) {
+            return (
+              <Gallery
+                exhibits={this.exhibits}
+                actions={this._actions}
+                progressStream={this._stream}
+              />
+            );
+          }
+          return (
+            <div className="jp-Gallery jp-mod-loading">{this._status}</div>
+          );
+        }}
+      </UseSignal>
+    );
   }
+  private _update = new Signal<GalleryWidget, void>(this);
   private _exhibits: IExhibit[] | null = null;
   private _status: string;
   private _actions: IActions;
@@ -123,7 +165,6 @@ function Exhibit(props: {
       if (exhibitId !== exhibit.id) {
         return;
       }
-      console.log('matched stream', message);
       if (message.phase === 'error') {
         showErrorMessage(
           'Could not download',

@@ -55,7 +55,7 @@ export function eventStream(
   endPoint = '',
   onStream: (message: IStreamMessage) => void,
   onError: (error: Event) => void
-) {
+): EventSource {
   const settings = ServerConnection.makeSettings();
   const requestUrl = URLExt.join(
     settings.baseUrl,
@@ -65,12 +65,10 @@ export function eventStream(
   const eventSource = new EventSource(requestUrl);
   eventSource.addEventListener('message', event => {
     const data = JSON.parse(event.data);
-    if (data.phase === 'finished' || data.phase === 'error') {
-      eventSource.close();
-    }
     onStream(data);
   });
   eventSource.addEventListener('error', error => {
     onError(error);
   });
+  return eventSource;
 }
