@@ -22,3 +22,7 @@
 .jp-Exhibit-icon {
   max-width: 100%;
 }
+
+.jp-Launcher-openExample .jp-Gallery {
+  display: contents;
+}

@@ -6,4 +6,4 @@ async def test_exhibits(jp_fetch):
     assert response.code == 200
     payload = json.loads(response.body)
     assert payload["exhibits"]
-    assert payload["api_version"] == "1.0"
+    assert payload["apiVersion"] == "1.0"

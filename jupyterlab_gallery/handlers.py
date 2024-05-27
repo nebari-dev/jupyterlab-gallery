@@ -110,7 +110,7 @@ class ExhibitsHandler(APIHandler):
                         prepare_exhibit(exhibit_config, exhibit_id=i)
                         for i, exhibit_config in enumerate(exhibits)
                     ],
-                    "api_version": "1.0",
+                    "apiVersion": "1.0",
                 }
             )
         )
