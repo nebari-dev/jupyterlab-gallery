@@ -20,20 +20,19 @@ from nbgitpuller.pull import GitPuller
 
 
 class SyncHandlerBase(JupyterHandler):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if 'pull_status_queues' not in self.settings:
-            self.settings['pull_status_queues'] = defaultdict(Queue)
+        if "pull_status_queues" not in self.settings:
+            self.settings["pull_status_queues"] = defaultdict(Queue)
 
         # store the most recent message from each queue to re-emit when client re-connects
         self.last_message = {}
 
         # We use this lock to make sure that only one sync operation
         # can be happening at a time. Git doesn't like concurrent use!
-        if 'git_lock' not in self.settings:
-            self.settings['git_lock'] = locks.Lock()
+        if "git_lock" not in self.settings:
+            self.settings["git_lock"] = locks.Lock()
 
     def get_login_url(self):
         # raise on failed auth, not redirect
@@ -43,26 +42,25 @@ class SyncHandlerBase(JupyterHandler):
 
     @property
     def git_lock(self):
-        return self.settings['git_lock']
+        return self.settings["git_lock"]
 
     async def _pull(self, repo: str, targetpath: str, exhibit_id: int):
-        q = self.settings['pull_status_queues'][exhibit_id]
+        q = self.settings["pull_status_queues"][exhibit_id]
         try:
-            q.put_nowait({
-                'phase': 'waiting',
-                'message': 'Waiting for a git lock'
-            })
+            q.put_nowait({"phase": "waiting", "message": "Waiting for a git lock"})
             await self.git_lock.acquire(1)
         except gen.TimeoutError:
-            q.put_nowait({
-                'phase': 'error',
-                'message': 'Another git operations is currently running, try again in a few minutes'
-            })
+            q.put_nowait(
+                {
+                    "phase": "error",
+                    "message": "Another git operations is currently running, try again in a few minutes",
+                }
+            )
             return
 
         try:
-            branch = self.get_argument('branch', None)
-            depth = self.get_argument('depth', None)
+            branch = self.get_argument("branch", None)
+            depth = self.get_argument("depth", None)
             if depth:
                 depth = int(depth)
             # The default working directory is the directory from which Jupyter
@@ -74,11 +72,19 @@ class SyncHandlerBase(JupyterHandler):
             # so that all repos are always in scope after cloning. Sometimes
             # server_root_dir will include things like `~` and so the path
             # must be expanded.
-            repo_parent_dir = os.path.join(os.path.expanduser(self.settings['server_root_dir']),
-                                           os.getenv('NBGITPULLER_PARENTPATH', ''))
-            repo_dir = os.path.join(repo_parent_dir, targetpath or repo.split('/')[-1])
+            repo_parent_dir = os.path.join(
+                os.path.expanduser(self.settings["server_root_dir"]),
+                os.getenv("NBGITPULLER_PARENTPATH", ""),
+            )
+            repo_dir = os.path.join(repo_parent_dir, targetpath or repo.split("/")[-1])
 
-            gp = GitPuller(repo, repo_dir, branch=branch, depth=depth, parent=self.settings['nbapp'])
+            gp = GitPuller(
+                repo,
+                repo_dir,
+                branch=branch,
+                depth=depth,
+                parent=self.settings["nbapp"],
+            )
 
             def pull():
                 try:
@@ -88,6 +94,7 @@ class SyncHandlerBase(JupyterHandler):
                     q.put_nowait(None)
                 except Exception as e:
                     raise e
+
             self.gp_thread = threading.Thread(target=pull)
             self.gp_thread.start()
         except Exception as e:
@@ -97,23 +104,23 @@ class SyncHandlerBase(JupyterHandler):
 
     async def emit(self, data: dict):
         serialized_data = json.dumps(data)
-        if 'output' in data:
-            self.log.info(data['output'])
+        if "output" in data:
+            self.log.info(data["output"])
         else:
             self.log.info(data)
-        self.write('data: {}\n\n'.format(serialized_data))
+        self.write("data: {}\n\n".format(serialized_data))
         await self.flush()
 
     async def _stream(self):
         # We gonna send out event streams!
-        self.set_header('content-type', 'text/event-stream')
-        self.set_header('cache-control', 'no-cache')
+        self.set_header("content-type", "text/event-stream")
+        self.set_header("cache-control", "no-cache")
 
         # start by re-emitting last message so that client can catch up after reconnecting
         for _exhibit_id, msg in self.last_message.items():
             await self.emit(msg)
 
-        queues = self.settings['pull_status_queues']
+        queues = self.settings["pull_status_queues"]
 
         # stream new messages as they are put on respective queues
         while True:
@@ -128,26 +135,31 @@ class SyncHandlerBase(JupyterHandler):
                     continue
 
                 if progress is None:
-                    msg = {'phase': 'finished', 'exhibit_id': exhibit_id}
-                    del self.settings['pull_status_queues'][exhibit_id]
+                    msg = {"phase": "finished", "exhibit_id": exhibit_id}
+                    del self.settings["pull_status_queues"][exhibit_id]
                 elif isinstance(progress, Exception):
                     msg = {
-                        'phase': 'error',
-                        'exhibit_id': exhibit_id,
-                        'message': str(progress),
-                        'output': '\n'.join([
-                            line.strip()
-                            for line in traceback.format_exception(
-                                type(progress), progress, progress.__traceback__
-                            )
-                        ])
+                        "phase": "error",
+                        "exhibit_id": exhibit_id,
+                        "message": str(progress),
+                        "output": "\n".join(
+                            [
+                                line.strip()
+                                for line in traceback.format_exception(
+                                    type(progress), progress, progress.__traceback__
+                                )
+                            ]
+                        ),
                     }
                 else:
-                    msg = {'output': progress, 'phase': 'syncing', 'exhibit_id': exhibit_id}
+                    msg = {
+                        "output": progress,
+                        "phase": "syncing",
+                        "exhibit_id": exhibit_id,
+                    }
 
                 self.last_message[exhibit_id] = msg
                 await self.emit(msg)
 
             if empty_queues == len(queues_view):
                 await gen.sleep(0.5)
-
