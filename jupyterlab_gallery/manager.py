@@ -20,12 +20,15 @@ def extract_repository_name(git_url: str) -> str:
 
 
 def has_updates(repo_path: Path) -> bool:
-    result = run(
-        "git status -b --porcelain -u n --ignored n",
-        cwd=repo_path,
-        capture_output=True,
-        shell=True,
-    )
+    try:
+        result = run(
+            "git status -b --porcelain -u n --ignored n",
+            cwd=repo_path,
+            capture_output=True,
+            shell=True,
+        )
+    except FileNotFoundError:
+        return False
     data = re.match(
         r"^## (.*?)( \[(ahead (?P<ahead>\d+))?(, )?(behind (?P<behind>\d+))?\])?$",
         result.stdout.decode("utf-8"),
@@ -104,7 +107,6 @@ class GalleryManager(LoggingConfigurable):
         local_path = self.get_local_path(exhibit)
 
         data["localPath"] = str(local_path)
-        data["updatesAvailable"] = has_updates(local_path)
         exists = local_path.exists()
         data["isCloned"] = exists
         if exists:
@@ -113,5 +115,6 @@ class GalleryManager(LoggingConfigurable):
                 data["lastUpdated"] = datetime.fromtimestamp(
                     fetch_head.stat().st_mtime
                 ).isoformat()
+            data["updatesAvailable"] = has_updates(local_path)
 
         return data
