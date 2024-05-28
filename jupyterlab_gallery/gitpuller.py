@@ -7,6 +7,7 @@
 # - reconnecting to the event stream when refreshing the browser
 # - handling multiple waiting pulls
 from tornado import gen, web, locks
+import logging
 import traceback
 
 import threading
@@ -14,9 +15,71 @@ import json
 import os
 from queue import Queue, Empty
 from collections import defaultdict
+from numbers import Number
 
+
+import git
 from jupyter_server.base.handlers import JupyterHandler
 from nbgitpuller.pull import GitPuller
+from tornado.iostream import StreamClosedError
+
+
+class CloneProgress(git.RemoteProgress):
+    def __init__(self):
+        self.queue = Queue()
+        self.max_stage = 0.01
+        self.prev_stage = 0
+        super().__init__()
+
+    def update(self, op_code: int, cur_count, max_count=None, message=""):
+        if op_code & git.RemoteProgress.BEGIN:
+            new_stage = None
+            if op_code & git.RemoteProgress.COUNTING:
+                new_stage = 0.05
+            elif op_code & git.RemoteProgress.COMPRESSING:
+                new_stage = 0.10
+            elif op_code & git.RemoteProgress.RECEIVING:
+                new_stage = 0.90
+            elif op_code & git.RemoteProgress.RESOLVING:
+                new_stage = 1
+
+            if new_stage:
+                self.prev_stage = self.max_stage
+                self.max_stage = new_stage
+
+        if isinstance(cur_count, Number) and isinstance(max_count, Number):
+            self.queue.put(
+                {
+                    "progress": self.prev_stage
+                    + cur_count / max_count * (self.max_stage - self.prev_stage),
+                    "message": message,
+                }
+            )
+            # self.queue.join()
+
+
+class ProgressGitPuller(GitPuller):
+    def initialize_repo(self):
+        logging.info("Repo {} doesn't exist. Cloning...".format(self.repo_dir))
+        progress = CloneProgress()
+
+        def clone_task():
+            git.Repo.clone_from(
+                self.git_url, self.repo_dir, branch=self.branch_name, progress=progress
+            )
+            progress.queue.put(None)
+
+        threading.Thread(target=clone_task).start()
+
+        timeout = 60
+
+        while True:
+            item = progress.queue.get(True)  # , timeout)
+            if item is None:
+                break
+            yield item
+
+        logging.info("Repo {} initialized".format(self.repo_dir))
 
 
 class SyncHandlerBase(JupyterHandler):
@@ -78,7 +141,7 @@ class SyncHandlerBase(JupyterHandler):
             )
             repo_dir = os.path.join(repo_parent_dir, targetpath or repo.split("/")[-1])
 
-            gp = GitPuller(
+            gp = ProgressGitPuller(
                 repo,
                 repo_dir,
                 branch=branch,
@@ -104,10 +167,6 @@ class SyncHandlerBase(JupyterHandler):
 
     async def emit(self, data: dict):
         serialized_data = json.dumps(data)
-        if "output" in data:
-            self.log.info(data["output"])
-        else:
-            self.log.info(data)
         self.write("data: {}\n\n".format(serialized_data))
         await self.flush()
 
@@ -137,6 +196,12 @@ class SyncHandlerBase(JupyterHandler):
                 if progress is None:
                     msg = {"phase": "finished", "exhibit_id": exhibit_id}
                     del self.settings["pull_status_queues"][exhibit_id]
+                elif isinstance(progress, dict):
+                    msg = {
+                        "output": progress,
+                        "phase": "progress",
+                        "exhibit_id": exhibit_id,
+                    }
                 elif isinstance(progress, Exception):
                     msg = {
                         "phase": "error",
@@ -159,7 +224,11 @@ class SyncHandlerBase(JupyterHandler):
                     }
 
                 self.last_message[exhibit_id] = msg
-                await self.emit(msg)
+                try:
+                    await self.emit(msg)
+                except StreamClosedError:
+                    self.log.warn("git puller stream got closed")
+                    pass
 
             if empty_queues == len(queues_view):
                 await gen.sleep(0.5)

@@ -1,12 +1,17 @@
 import * as React from 'react';
 import { ReactWidget, showErrorMessage } from '@jupyterlab/apputils';
-import { Button, UseSignal } from '@jupyterlab/ui-components';
+import {
+  Button,
+  UseSignal,
+  folderIcon,
+  downloadIcon
+} from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { IStream, Stream, Signal } from '@lumino/signaling';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { IExhibit } from './types';
 import { IExhibitReply } from './types';
-import { requestAPI, eventStream, IStreamMessage } from './handler';
+import { requestAPI, eventStream, IStreamMessage, IProgress } from './handler';
 
 interface IActions {
   download(exhibit: IExhibit): Promise<void>;
@@ -20,8 +25,9 @@ export class GalleryWidget extends ReactWidget {
     fileChanged: Contents.IManager['fileChanged'];
     refreshFileBrowser: () => Promise<void>;
   }) {
-    const { trans, fileChanged } = options;
     super();
+    const { trans, fileChanged } = options;
+    this._trans = trans;
     this._status = trans.__('Gallery loading...');
     this._actions = {
       open: async (exhibit: IExhibit) => {
@@ -109,6 +115,7 @@ export class GalleryWidget extends ReactWidget {
                 exhibits={this.exhibits}
                 actions={this._actions}
                 progressStream={this._stream}
+                trans={this._trans}
               />
             );
           }
@@ -119,6 +126,7 @@ export class GalleryWidget extends ReactWidget {
       </UseSignal>
     );
   }
+  private _trans: TranslationBundle;
   private _update = new Signal<GalleryWidget, void>(this);
   private _exhibits: IExhibit[] | null = null;
   private _status: string;
@@ -130,11 +138,13 @@ function Gallery(props: {
   exhibits: IExhibit[];
   actions: IActions;
   progressStream: IStream<GalleryWidget, IStreamMessage>;
+  trans: TranslationBundle;
 }): JSX.Element {
   return (
     <div className="jp-Gallery">
       {props.exhibits.map(exhibit => (
         <Exhibit
+          trans={props.trans}
           key={exhibit.repository}
           exhibit={exhibit}
           actions={props.actions}
@@ -145,13 +155,19 @@ function Gallery(props: {
   );
 }
 
+interface IProgressState extends IProgress {
+  state?: 'error';
+}
+
 function Exhibit(props: {
   exhibit: IExhibit;
   actions: IActions;
   progressStream: IStream<GalleryWidget, IStreamMessage>;
+  trans: TranslationBundle;
 }): JSX.Element {
   const { exhibit, actions } = props;
-  const [progressMessage, setProgressMessage] = React.useState<string>();
+  const [progress, setProgress] = React.useState<IProgressState | null>(null);
+  const [progressMessage, setProgressMessage] = React.useState<string>('');
 
   React.useEffect(() => {
     const listenToStreams = (_: GalleryWidget, message: IStreamMessage) => {
@@ -164,9 +180,13 @@ function Exhibit(props: {
           'Could not download',
           message.output ?? 'Unknown error'
         );
+      }
+      if (message.phase === 'progress') {
+        setProgress(message.output);
+        setProgressMessage(message.output.message);
       } else {
         const { output, phase } = message;
-        setProgressMessage(output ? phase + ': ' + output : phase);
+        console.log(output + phase);
       }
     };
     props.progressStream.connect(listenToStreams);
@@ -177,31 +197,85 @@ function Exhibit(props: {
   return (
     <div className="jp-Exhibit">
       <h4 className="jp-Exhibit-title">{exhibit.title}</h4>
-      <img src={exhibit.icon} className="jp-Exhibit-icon" alt={exhibit.title} />
+      <div className="jp-Exhibit-icon">
+        <img src={exhibit.icon} alt={exhibit.title} />
+      </div>
       <div className="jp-Exhibit-description">{exhibit.description}</div>
-      {progressMessage}
+      {progress ? (
+        <div
+          className={
+            'jp-Exhibit-progressbar' +
+            (progress.state === 'error' ? ' jp-Exhibit-progressbar-error' : '')
+          }
+        >
+          <div
+            className="jp-Exhibit-progressbar-filler"
+            style={{ width: progress.progress * 100 + '%' }}
+          ></div>
+          <div className="jp-Exhibit-progressMessage">{progressMessage}</div>
+        </div>
+      ) : null}
       <div className="jp-Exhibit-buttons">
         {!exhibit.isCloned ? (
           <Button
+            title={props.trans.__('Set up')}
             onClick={async () => {
               setProgressMessage('Downloading');
-              await actions.download(exhibit);
+              setProgress({
+                progress: 0.01,
+                message: 'Initializing'
+              });
+              try {
+                await actions.download(exhibit);
+                setProgress(null);
+              } catch {
+                setProgress({
+                  ...(progress as any),
+                  state: 'error'
+                });
+                setProgressMessage('');
+              }
             }}
           >
-            Setup up
+            <downloadIcon.react />
           </Button>
         ) : (
-          <Button
-            onClick={() => {
-              actions.open(exhibit);
-            }}
-          >
-            Open
-          </Button>
+          <>
+            <Button
+              minimal={true}
+              title={props.trans.__('Open')}
+              onClick={() => {
+                actions.open(exhibit);
+              }}
+            >
+              <folderIcon.react />
+            </Button>
+            <Button
+              disabled={!exhibit.updatesAvailable}
+              minimal={true}
+              title={props.trans.__('Fetch latest changes')}
+              onClick={async () => {
+                setProgressMessage('Refreshing');
+                setProgress({
+                  progress: 0.25,
+                  message: 'Refreshing'
+                });
+                try {
+                  await actions.download(exhibit);
+                  setProgress(null);
+                } catch {
+                  setProgress({
+                    ...(progress as any),
+                    state: 'error'
+                  });
+                  setProgressMessage('');
+                }
+              }}
+            >
+              <downloadIcon.react />
+            </Button>
+          </>
         )}
-        {exhibit.isCloned && exhibit.updatesAvailable ? (
-          <Button>Update</Button>
-        ) : null}
       </div>
     </div>
   );

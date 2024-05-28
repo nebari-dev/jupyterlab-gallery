@@ -1,7 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Dict, List, Unicode
+from subprocess import run
+import re
 
 
 def extract_repository_owner(git_url: str) -> str:
@@ -14,6 +17,25 @@ def extract_repository_name(git_url: str) -> str:
     if fragment.endswith(".git"):
         return fragment[:-4]
     return fragment
+
+
+def has_updates(repo_path: Path) -> bool:
+    try:
+        result = run(
+            "git status -b --porcelain -u n --ignored n",
+            cwd=repo_path,
+            capture_output=True,
+            shell=True,
+        )
+    except FileNotFoundError:
+        return False
+    data = re.match(
+        r"^## (.*?)( \[(ahead (?P<ahead>\d+))?(, )?(behind (?P<behind>\d+))?\])?$",
+        result.stdout.decode("utf-8"),
+    )
+    if not data:
+        return False
+    return data["behind"] is not None
 
 
 class GalleryManager(LoggingConfigurable):
@@ -85,23 +107,14 @@ class GalleryManager(LoggingConfigurable):
         local_path = self.get_local_path(exhibit)
 
         data["localPath"] = str(local_path)
-        data["revision"] = "2a2f2ee779ac21b70339da6551c2f6b0b00f6efe"
-        # timestamp from .git/FETCH_HEAD of the cloned repo
-        data["lastUpdated"] = "2024-05-01"
-        data["currentTag"] = "v3.2.4"
-        # the UI can show that there are X updates available; it could also show
-        # a summary of the commits available, or tags available; possibly the name
-        # of the most recent tag and would be sufficient over sending the list of commits,
-        # which can be long and delay the initialization.
-        data["updatesAvailable"] = False
-        data["isCloned"] = local_path.exists()
-        data["newestTag"] = "v3.2.5"
-        data["updates"] = [
-            {
-                "revision": "02f04c339f880540064d2223176830afdd02f5fa",
-                "title": "commit description",
-                "description": "long commit description",
-                "date": "date in format returned by git",
-            }
-        ]
+        exists = local_path.exists()
+        data["isCloned"] = exists
+        if exists:
+            fetch_head = local_path / ".git" / "FETCH_HEAD"
+            if fetch_head.exists():
+                data["lastUpdated"] = datetime.fromtimestamp(
+                    fetch_head.stat().st_mtime
+                ).isoformat()
+            data["updatesAvailable"] = has_updates(local_path)
+
         return data

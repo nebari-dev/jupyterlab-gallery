@@ -34,7 +34,7 @@ c.GalleryManager.exhibits = [
         "git": "https://github.com/jupyterlab/jupyterlab.git",
         "repository": "https://github.com/jupyterlab/jupyterlab/",
         "title": "JupyterLab",
-        "description": "JupyterLab",
+        "description": "JupyterLab is a highly extensible, feature-rich notebook authoring application and editing environment.",
         "icon": "https://raw.githubusercontent.com/jupyterlab/jupyterlab/main/packages/ui-components/style/icons/jupyter/jupyter.svg"
     }
 ]
