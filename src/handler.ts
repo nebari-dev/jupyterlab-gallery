@@ -45,11 +45,24 @@ export async function requestAPI<T>(
   return data;
 }
 
-export interface IStreamMessage {
-  output?: string;
-  phase: string;
+export interface IProgress {
+  progress: number;
+  message: string
+}
+
+export interface IProgressStreamMessage {
+  output: IProgress;
+  phase: 'progress';
   exhibit_id: number;
 }
+
+export interface ITextStreamMessage {
+  output?: string;
+  phase: 'error' | 'finished' | 'syncing';
+  exhibit_id: number;
+}
+
+export type IStreamMessage = IProgressStreamMessage | ITextStreamMessage;
 
 export function eventStream(
   endPoint = '',
