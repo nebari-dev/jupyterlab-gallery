@@ -47,7 +47,7 @@ export async function requestAPI<T>(
 
 export interface IProgress {
   progress: number;
-  message: string
+  message: string;
 }
 
 export interface IProgressStreamMessage {

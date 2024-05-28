@@ -1,6 +1,11 @@
 import * as React from 'react';
 import { ReactWidget, showErrorMessage } from '@jupyterlab/apputils';
-import { Button, UseSignal, folderIcon, downloadIcon } from '@jupyterlab/ui-components';
+import {
+  Button,
+  UseSignal,
+  folderIcon,
+  downloadIcon
+} from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { IStream, Stream, Signal } from '@lumino/signaling';
 import { TranslationBundle } from '@jupyterlab/translation';
@@ -151,7 +156,7 @@ function Gallery(props: {
 }
 
 interface IProgressState extends IProgress {
-  state?: 'error'
+  state?: 'error';
 }
 
 function Exhibit(props: {
@@ -178,10 +183,10 @@ function Exhibit(props: {
       }
       if (message.phase === 'progress') {
         setProgress(message.output);
-        setProgressMessage(message.output.message)
+        setProgressMessage(message.output.message);
       } else {
         const { output, phase } = message;
-        console.log(output + phase)
+        console.log(output + phase);
       }
     };
     props.progressStream.connect(listenToStreams);
@@ -196,12 +201,20 @@ function Exhibit(props: {
         <img src={exhibit.icon} alt={exhibit.title} />
       </div>
       <div className="jp-Exhibit-description">{exhibit.description}</div>
-      {progress ? <div className={"jp-Exhibit-progressbar" + (progress.state === 'error' ? " jp-Exhibit-progressbar-error" : "")}>
-        <div className="jp-Exhibit-progressbar-filler" style={{width: (progress.progress * 100) + '%'}}></div>
-        <div className="jp-Exhibit-progressMessage">
-          {progressMessage}
+      {progress ? (
+        <div
+          className={
+            'jp-Exhibit-progressbar' +
+            (progress.state === 'error' ? ' jp-Exhibit-progressbar-error' : '')
+          }
+        >
+          <div
+            className="jp-Exhibit-progressbar-filler"
+            style={{ width: progress.progress * 100 + '%' }}
+          ></div>
+          <div className="jp-Exhibit-progressMessage">{progressMessage}</div>
         </div>
-      </div> : null}
+      ) : null}
       <div className="jp-Exhibit-buttons">
         {!exhibit.isCloned ? (
           <Button
@@ -217,10 +230,10 @@ function Exhibit(props: {
                 setProgress(null);
               } catch {
                 setProgress({
-                  ...progress as any,
+                  ...(progress as any),
                   state: 'error'
                 });
-                setProgressMessage('')
+                setProgressMessage('');
               }
             }}
           >
@@ -242,22 +255,22 @@ function Exhibit(props: {
               minimal={true}
               title={props.trans.__('Fetch latest changes')}
               onClick={async () => {
-              setProgressMessage('Refreshing');
-              setProgress({
-                progress: 0.25,
-                message: 'Refreshing'
-              });
-              try {
-                await actions.download(exhibit);
-                setProgress(null);
-              } catch {
+                setProgressMessage('Refreshing');
                 setProgress({
-                  ...progress as any,
-                  state: 'error'
+                  progress: 0.25,
+                  message: 'Refreshing'
                 });
-                setProgressMessage('')
-              }
-            }}
+                try {
+                  await actions.download(exhibit);
+                  setProgress(null);
+                } catch {
+                  setProgress({
+                    ...(progress as any),
+                    state: 'error'
+                  });
+                  setProgressMessage('');
+                }
+              }}
             >
               <downloadIcon.react />
             </Button>
