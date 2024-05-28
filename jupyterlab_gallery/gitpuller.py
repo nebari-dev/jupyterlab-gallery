@@ -15,11 +15,13 @@ import json
 import os
 from queue import Queue, Empty
 from collections import defaultdict
+from numbers import Number
+
 
 import git
 from jupyter_server.base.handlers import JupyterHandler
 from nbgitpuller.pull import GitPuller
-from numbers import Number
+from tornado.iostream import StreamClosedError
 
 
 class CloneProgress(git.RemoteProgress):
@@ -222,7 +224,11 @@ class SyncHandlerBase(JupyterHandler):
                     }
 
                 self.last_message[exhibit_id] = msg
-                await self.emit(msg)
+                try:
+                    await self.emit(msg)
+                except StreamClosedError:
+                    self.log.warn("git puller stream got closed")
+                    pass
 
             if empty_queues == len(queues_view):
                 await gen.sleep(0.5)
