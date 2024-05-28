@@ -10,6 +10,38 @@ This extension is composed of a Python package named `jupyterlab-gallery`
 for the server extension and a NPM package named `jupyterlab-gallery`
 for the frontend extension.
 
+When [`jupyterlab-new-launcher`](https://github.com/nebari-dev/jupyterlab-new-launcher) is installed, the gallery will be added as a "Gallery" section in the launcher; otherwise it will be shown in the left sidebar.
+
+## Configuration
+
+You can configure the gallery with the following traitlets:
+
+- `GalleryManager.exhibits`: controls the tiles shown in the gallery
+- `GalleryManager.destination`: defined the path into which the exhibits will be cloned (by default `/gallery`)
+- `GalleryManager.title`: the display name of the widget (by default "Gallery")
+
+These traitlets can be passed from the command line, a JSON file (`.json`) or a Python file (`.py`).
+
+You must name the file `jupyter_gallery_config.py` or `jupyter_gallery_config.json` and place it in one of the paths returned by `jupyter --paths` under the `config` section.
+
+An example Python file would include:
+
+```python
+c.GalleryManager.title = "Examples"
+c.GalleryManager.destination = "examples"
+c.GalleryManager.exhibits = [
+    {
+        "git": "https://github.com/jupyterlab/jupyterlab.git",
+        "repository": "https://github.com/jupyterlab/jupyterlab/",
+        "title": "JupyterLab",
+        "description": "JupyterLab",
+        "icon": "https://raw.githubusercontent.com/jupyterlab/jupyterlab/main/packages/ui-components/style/icons/jupyter/jupyter.svg"
+    }
+]
+```
+
+Using the Python file enables including the PAT access token in the `git` stanza (note: while the `git` value is never exposed to the user, the `repository` is and should not contain the secret if you do not want it to be shared with the users).
+
 ## Requirements
 
 - JupyterLab >= 4.0.0

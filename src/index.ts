@@ -11,6 +11,8 @@ import type { INewLauncher } from 'jupyterlab-new-launcher/lib/types';
 
 import { GalleryWidget } from './gallery';
 import { galleryIcon } from './icons';
+import { IGalleryReply } from './types';
+import { requestAPI } from './handler';
 
 function isNewLauncher(launcher: ILauncher): launcher is INewLauncher {
   return 'addSection' in launcher;
@@ -52,7 +54,15 @@ const plugin: JupyterFrontEndPlugin<void> = {
       }
     });
 
-    const title = trans.__('Gallery');
+    const data = await requestAPI<IGalleryReply>('gallery');
+    const expectedVersion = '1.0';
+    if (data.apiVersion !== expectedVersion) {
+      console.warn(
+        `jupyter-gallery API version out of sync, expected ${expectedVersion}, got ${data.apiVersion}`
+      );
+    }
+
+    const title = data.title === 'Gallery' ? trans.__('Gallery') : data.title;
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
     if (launcher && isNewLauncher(launcher)) {
       launcher.addSection({

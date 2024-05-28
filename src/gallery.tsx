@@ -79,12 +79,6 @@ export class GalleryWidget extends ReactWidget {
   private async _load() {
     try {
       const data = await requestAPI<IExhibitReply>('exhibits');
-      const expectedVersion = '1.0';
-      if (data.apiVersion !== expectedVersion) {
-        console.warn(
-          `jupyter-gallery API version out of sync, expected ${expectedVersion}, got ${data.apiVersion}`
-        );
-      }
       this.exhibits = data.exhibits;
     } catch (reason) {
       this._status = `jupyterlab_gallery server failed:\n${reason}`;
