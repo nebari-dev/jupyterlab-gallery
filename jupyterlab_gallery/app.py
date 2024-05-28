@@ -1,12 +1,13 @@
 from jupyter_server.extension.application import ExtensionApp
-from .handlers import ExhibitsHandler, PullHandler
-from .manager import ExhibitManager
+from .handlers import ExhibitsHandler, GalleryHandler, PullHandler
+from .manager import GalleryManager
 
 
 class GalleryApp(ExtensionApp):
-    name = "jupyterlab-gallery"
+    name = "gallery"
 
     handlers = [
+        ("jupyterlab-gallery/gallery", GalleryHandler),
         ("jupyterlab-gallery/exhibits", ExhibitsHandler),
         ("jupyterlab-gallery/pull", PullHandler),
     ]
@@ -17,10 +18,10 @@ class GalleryApp(ExtensionApp):
 
     def initialize_settings(self):
         self.log.info("Configured gallery manager")
-        exhibit_manager = ExhibitManager(
+        gallery_manager = GalleryManager(
             log=self.log, root_dir=self.serverapp.root_dir, config=self.config
         )
-        self.settings.update({"exhibit_manager": exhibit_manager})
+        self.settings.update({"gallery_manager": gallery_manager})
 
     def initialize_handlers(self):
         # setting nbapp is needed for nbgitpuller

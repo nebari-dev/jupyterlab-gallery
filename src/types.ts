@@ -1,6 +1,10 @@
+export interface IGalleryReply {
+  title: string;
+  apiVersion: string;
+}
+
 export interface IExhibitReply {
   exhibits: IExhibit[];
-  apiVersion: string;
 }
 
 export interface IExhibit {

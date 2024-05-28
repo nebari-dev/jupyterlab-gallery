@@ -3,7 +3,7 @@ from typing import cast
 
 from jupyter_server.base.handlers import APIHandler
 from .gitpuller import SyncHandlerBase
-from .manager import ExhibitManager
+from .manager import GalleryManager
 import tornado
 
 
@@ -13,14 +13,26 @@ import tornado
 EXPOSED_EXHIBIT_KEYS = ["repository", "title", "description", "icon"]
 
 
-class ExhibitsHandler(APIHandler):
+class BaseHandler(APIHandler):
     @property
-    def exhibit_manager(self) -> ExhibitManager:
-        return cast(ExhibitManager, self.settings["exhibit_manager"])
+    def gallery_manager(self) -> GalleryManager:
+        return cast(GalleryManager, self.settings["gallery_manager"])
 
-    # The following decorator should be present on all verb methods (head, get, post,
-    # patch, put, delete, options) to ensure only authorized user can request the
-    # Jupyter server
+
+class GalleryHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+        self.finish(
+            json.dumps(
+                {
+                    "title": self.gallery_manager.title,
+                    "apiVersion": "1.0",
+                }
+            )
+        )
+
+
+class ExhibitsHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         self.finish(
@@ -29,10 +41,9 @@ class ExhibitsHandler(APIHandler):
                     "exhibits": [
                         self._prepare_exhibit(exhibit_config, exhibit_id=i)
                         for i, exhibit_config in enumerate(
-                            self.exhibit_manager.exhibits
+                            self.gallery_manager.exhibits
                         )
-                    ],
-                    "apiVersion": "1.0",
+                    ]
                 }
             )
         )
@@ -40,28 +51,24 @@ class ExhibitsHandler(APIHandler):
     def _prepare_exhibit(self, exhibit, exhibit_id: int) -> dict:
         exposed_config = {k: v for k, v in exhibit.items() if k in EXPOSED_EXHIBIT_KEYS}
         return {
-            **self.exhibit_manager.get_exhibit_data(exhibit),
+            **self.gallery_manager.get_exhibit_data(exhibit),
             **exposed_config,
             "id": exhibit_id,
         }
 
 
-class PullHandler(SyncHandlerBase):
-    @property
-    def exhibit_manager(self) -> ExhibitManager:
-        return cast(ExhibitManager, self.settings["exhibit_manager"])
-
+class PullHandler(BaseHandler, SyncHandlerBase):
     @tornado.web.authenticated
     async def post(self):
         data = self.get_json_body()
         exhibit_id = data["exhibit_id"]
-        exhibit = self.exhibit_manager.exhibits[exhibit_id]
+        exhibit = self.gallery_manager.exhibits[exhibit_id]
         return await super()._pull(
             repo=exhibit["git"],
             exhibit_id=exhibit_id,
             # branch
             # depth
-            targetpath=str(self.exhibit_manager.get_local_path(exhibit)),
+            targetpath=str(self.gallery_manager.get_local_path(exhibit)),
         )
 
     @tornado.web.authenticated

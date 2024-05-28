@@ -16,7 +16,7 @@ def extract_repository_name(git_url: str) -> str:
     return fragment
 
 
-class ExhibitManager(LoggingConfigurable):
+class GalleryManager(LoggingConfigurable):
     root_dir = Unicode(
         config=False,
         allow_none=True,
@@ -57,6 +57,12 @@ class ExhibitManager(LoggingConfigurable):
     destination = Unicode(
         help="The directory into which the exhibits will be cloned",
         default_value="gallery",
+        config=True,
+    )
+
+    title = Unicode(
+        help="The the display name of the Gallery widget",
+        default_value="Gallery",
         config=True,
     )
 
