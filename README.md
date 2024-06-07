@@ -32,15 +32,22 @@ c.GalleryManager.destination = "examples"
 c.GalleryManager.exhibits = [
     {
         "git": "https://github.com/jupyterlab/jupyterlab.git",
-        "repository": "https://github.com/jupyterlab/jupyterlab/",
+        "homepage": "https://github.com/jupyterlab/jupyterlab/",
         "title": "JupyterLab",
         "description": "JupyterLab is a highly extensible, feature-rich notebook authoring application and editing environment.",
         "icon": "https://raw.githubusercontent.com/jupyterlab/jupyterlab/main/packages/ui-components/style/icons/jupyter/jupyter.svg"
+    },
+    {
+        "git": "https://github.com/my_org/private-tutorial.git",
+        "account": "name-of-the-account-or-app-owning-the-token",
+        "token": "access-token-for-example-starting-with-github_pat_",
+        "title": "My private tutorial",
+        "description": "A tutorial which is not public.",
     }
 ]
 ```
 
-Using the Python file enables including the PAT access token in the `git` stanza (note: while the `git` value is never exposed to the user, the `repository` is and should not contain the secret if you do not want it to be shared with the users).
+Using the Python file enables injecting the personal access token (PAT) into the `token` stanza if you prefer to store it in an environment variable rather than in the configuration file (recommended).
 
 ## Requirements
 

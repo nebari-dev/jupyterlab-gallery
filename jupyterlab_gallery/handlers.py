@@ -66,6 +66,8 @@ class PullHandler(BaseHandler, SyncHandlerBase):
         return await super()._pull(
             repo=exhibit["git"],
             exhibit_id=exhibit_id,
+            account=exhibit.get("account"),
+            token=exhibit.get("token"),
             # branch
             # depth
             targetpath=str(self.gallery_manager.get_local_path(exhibit)),

@@ -16,12 +16,14 @@ import os
 from queue import Queue, Empty
 from collections import defaultdict
 from numbers import Number
-
+from typing import Optional
 
 import git
 from jupyter_server.base.handlers import JupyterHandler
 from nbgitpuller.pull import GitPuller
 from tornado.iostream import StreamClosedError
+
+from .git_utils import git_credentials
 
 
 class CloneProgress(git.RemoteProgress):
@@ -59,19 +61,32 @@ class CloneProgress(git.RemoteProgress):
 
 
 class ProgressGitPuller(GitPuller):
+    def __init__(
+        self, git_url, repo_dir, token: Optional[str], account: Optional[str], **kwargs
+    ):
+        self._token = token
+        self._account = account
+        # it will attempt to resolve default branch which requires credentials too
+        with git_credentials(token=self._token, account=self._account):
+            super().__init__(git_url, repo_dir, **kwargs)
+
     def initialize_repo(self):
         logging.info("Repo {} doesn't exist. Cloning...".format(self.repo_dir))
         progress = CloneProgress()
 
         def clone_task():
-            git.Repo.clone_from(
-                self.git_url, self.repo_dir, branch=self.branch_name, progress=progress
-            )
-            progress.queue.put(None)
+            with git_credentials(token=self._token, account=self._account):
+                git.Repo.clone_from(
+                    self.git_url,
+                    self.repo_dir,
+                    branch=self.branch_name,
+                    progress=progress,
+                )
+                progress.queue.put(None)
 
         threading.Thread(target=clone_task).start()
-
-        timeout = 60
+        # TODO: add configurable timeout
+        # timeout = 60
 
         while True:
             item = progress.queue.get(True)  # , timeout)
@@ -80,6 +95,10 @@ class ProgressGitPuller(GitPuller):
             yield item
 
         logging.info("Repo {} initialized".format(self.repo_dir))
+
+    def update(self):
+        with git_credentials(token=self._token, account=self._account):
+            yield from super().update()
 
 
 class SyncHandlerBase(JupyterHandler):
@@ -107,7 +126,14 @@ class SyncHandlerBase(JupyterHandler):
     def git_lock(self):
         return self.settings["git_lock"]
 
-    async def _pull(self, repo: str, targetpath: str, exhibit_id: int):
+    async def _pull(
+        self,
+        repo: str,
+        targetpath: str,
+        exhibit_id: int,
+        token: Optional[str],
+        account: Optional[str],
+    ):
         q = self.settings["pull_status_queues"][exhibit_id]
         try:
             q.put_nowait({"phase": "waiting", "message": "Waiting for a git lock"})
@@ -147,6 +173,9 @@ class SyncHandlerBase(JupyterHandler):
                 branch=branch,
                 depth=depth,
                 parent=self.settings["nbapp"],
+                # our additions
+                token=token,
+                account=account,
             )
 
             def pull():
