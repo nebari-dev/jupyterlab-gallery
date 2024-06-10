@@ -108,8 +108,8 @@ class SyncHandlerBase(JupyterHandler):
         if "pull_status_queues" not in self.settings:
             self.settings["pull_status_queues"] = defaultdict(Queue)
 
-        # store the most recent message from each queue to re-emit when client re-connects
-        self.last_message = {}
+        if "last_message" not in self.settings:
+            self.settings["last_message"] = {}
 
         # We use this lock to make sure that only one sync operation
         # can be happening at a time. Git doesn't like concurrent use!
@@ -204,11 +204,12 @@ class SyncHandlerBase(JupyterHandler):
         self.set_header("content-type", "text/event-stream")
         self.set_header("cache-control", "no-cache")
 
-        # start by re-emitting last message so that client can catch up after reconnecting
-        for _exhibit_id, msg in self.last_message.items():
-            await self.emit(msg)
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=833462
+        await self.emit({"phase": "connected"})
 
         queues = self.settings["pull_status_queues"]
+        last_message = self.settings["last_message"]
+        last_message_sent = {}
 
         # stream new messages as they are put on respective queues
         while True:
@@ -216,6 +217,26 @@ class SyncHandlerBase(JupyterHandler):
             # copy to avoid error due to size change during iteration:
             queues_view = queues.copy()
             for exhibit_id, q in queues_view.items():
+                # emit an update if anything changed
+                if last_message.get(exhibit_id) != last_message_sent.get(exhibit_id):
+                    msg = last_message[exhibit_id]
+                    last_message_sent[exhibit_id] = msg
+                    try:
+                        await self.emit(msg)
+                    except StreamClosedError as e:
+                        # this is expected to happen whenever client closes (e.g. user
+                        # closes the browser or refreshes the tab with JupterLab)
+                        if e.real_error:
+                            self.warn.info(
+                                f"git puller stream got closed with error {e.real_error}"
+                            )
+                        else:
+                            self.log.info("git puller stream closed")
+                        # return to stop reading messages, so that the next
+                        # client who connects can consume them
+                        return
+
+                # try to consume next message
                 try:
                     progress = q.get_nowait()
                 except Empty:
@@ -252,12 +273,7 @@ class SyncHandlerBase(JupyterHandler):
                         "exhibit_id": exhibit_id,
                     }
 
-                self.last_message[exhibit_id] = msg
-                try:
-                    await self.emit(msg)
-                except StreamClosedError:
-                    self.log.warn("git puller stream got closed")
-                    pass
+                last_message[exhibit_id] = msg
 
             if empty_queues == len(queues_view):
-                await gen.sleep(0.5)
+                await gen.sleep(0.1)
