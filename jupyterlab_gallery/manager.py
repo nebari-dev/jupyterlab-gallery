@@ -3,39 +3,13 @@ from pathlib import Path
 
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Dict, List, Unicode
-from subprocess import run
-import re
 
-
-def extract_repository_owner(git_url: str) -> str:
-    fragments = git_url.strip("/").split("/")
-    return fragments[-2] if len(fragments) >= 2 else ""
-
-
-def extract_repository_name(git_url: str) -> str:
-    fragment = git_url.split("/")[-1]
-    if fragment.endswith(".git"):
-        return fragment[:-4]
-    return fragment
-
-
-def has_updates(repo_path: Path) -> bool:
-    try:
-        result = run(
-            "git status -b --porcelain -u n --ignored n",
-            cwd=repo_path,
-            capture_output=True,
-            shell=True,
-        )
-    except FileNotFoundError:
-        return False
-    data = re.match(
-        r"^## (.*?)( \[(ahead (?P<ahead>\d+))?(, )?(behind (?P<behind>\d+))?\])?$",
-        result.stdout.decode("utf-8"),
-    )
-    if not data:
-        return False
-    return data["behind"] is not None
+from .git_utils import (
+    extract_repository_owner,
+    extract_repository_name,
+    git_credentials,
+    has_updates,
+)
 
 
 class GalleryManager(LoggingConfigurable):
@@ -47,12 +21,16 @@ class GalleryManager(LoggingConfigurable):
     exhibits = List(
         Dict(
             per_key_traits={
-                "git": Unicode(
-                    help="Git URL used for cloning  (can include branch, PAT) - not show to the user"
-                ),
-                "repository": Unicode(help="User-facing URL of the repository"),
+                "git": Unicode(help="Git URL used for cloning"),
+                "homepage": Unicode(help="User-facing URL to open if any"),
                 "title": Unicode(help="Name of the exhibit"),
                 "description": Unicode(help="Short description"),
+                "token": Unicode(
+                    help="Personal access token - required if the repository is private"
+                ),
+                "account": Unicode(
+                    help="Username or name of application - required if the repository is private"
+                ),
                 # TODO: validate path exists
                 "icon": Unicode(help="Path to an svg or png, or base64 encoded string"),
                 # other ideas: `path_in_repository`, `documentation_url`
@@ -63,13 +41,13 @@ class GalleryManager(LoggingConfigurable):
         default_value=[
             {
                 "git": "https://github.com/nebari-dev/nebari.git",
-                "repository": "https://github.com/nebari-dev/nebari/",
+                "homepage": "https://github.com/nebari-dev/nebari/",
                 "title": "Nebari",
                 "description": "🪴 Nebari - your open source data science platform",
             },
             {
                 "git": "https://github.com/nebari-dev/nebari-docker-images.git",
-                "repository": "https://github.com/nebari-dev/nebari-docker-images/",
+                "homepage": "https://github.com/nebari-dev/nebari-docker-images/",
                 "title": "Nebari docker images",
                 "description": "Nebari Docker images",
             },
@@ -97,9 +75,10 @@ class GalleryManager(LoggingConfigurable):
         data = {}
 
         if "icon" not in exhibit:
-            if exhibit["repository"].startswith("https://github.com/"):
+            homepage = exhibit.get("homepage")
+            if homepage and homepage.startswith("https://github.com/"):
                 repository_name = extract_repository_name(exhibit["git"])
-                repository_owner = extract_repository_owner(exhibit["repository"])
+                repository_owner = extract_repository_owner(homepage)
                 data["icon"] = (
                     f"https://opengraph.githubassets.com/1/{repository_owner}/{repository_name}"
                 )
@@ -115,6 +94,10 @@ class GalleryManager(LoggingConfigurable):
                 data["lastUpdated"] = datetime.fromtimestamp(
                     fetch_head.stat().st_mtime
                 ).isoformat()
-            data["updatesAvailable"] = has_updates(local_path)
+            with git_credentials(
+                account=exhibit.get("account"), token=exhibit.get("token")
+            ):
+                # TODO: this is blocking initial load; can we make it async?
+                data["updatesAvailable"] = has_updates(local_path)
 
         return data
