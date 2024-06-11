@@ -68,3 +68,13 @@
 .jp-Exhibit-buttons .jp-Button:disabled {
   opacity: 0.3;
 }
+
+.jp-Exhibit-buttons .jp-spinningIcon > svg {
+  animation: jp-waiting-spin 3s linear infinite;
+}
+
+@keyframes jp-waiting-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}

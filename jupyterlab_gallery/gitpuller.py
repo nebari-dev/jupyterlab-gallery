@@ -7,6 +7,7 @@
 # - reconnecting to the event stream when refreshing the browser
 # - handling multiple waiting pulls
 from tornado import gen, web, locks
+import asyncio
 import logging
 import traceback
 
@@ -15,8 +16,7 @@ import json
 import os
 from queue import Queue, Empty
 from collections import defaultdict
-from numbers import Number
-from typing import Optional
+from typing import Optional, TypedDict
 
 import git
 from jupyter_server.base.handlers import JupyterHandler
@@ -49,13 +49,15 @@ class CloneProgress(git.RemoteProgress):
                 self.prev_stage = self.max_stage
                 self.max_stage = new_stage
 
-        if isinstance(cur_count, Number) and isinstance(max_count, Number):
+        if isinstance(cur_count, (int, float)) and isinstance(max_count, (int, float)):
+            progress = self.prev_stage + cur_count / max_count * (
+                self.max_stage - self.prev_stage
+            )
             self.queue.put(
-                {
-                    "progress": self.prev_stage
-                    + cur_count / max_count * (self.max_stage - self.prev_stage),
-                    "message": message,
-                }
+                Update(
+                    progress=progress,
+                    message=message,
+                )
             )
             # self.queue.join()
 
@@ -76,13 +78,17 @@ class ProgressGitPuller(GitPuller):
 
         def clone_task():
             with git_credentials(token=self._token, account=self._account):
-                git.Repo.clone_from(
-                    self.git_url,
-                    self.repo_dir,
-                    branch=self.branch_name,
-                    progress=progress,
-                )
-                progress.queue.put(None)
+                try:
+                    git.Repo.clone_from(
+                        self.git_url,
+                        self.repo_dir,
+                        branch=self.branch_name,
+                        progress=progress,
+                    )
+                except Exception as e:
+                    progress.queue.put(e)
+                finally:
+                    progress.queue.put(None)
 
         threading.Thread(target=clone_task).start()
         # TODO: add configurable timeout
@@ -101,6 +107,11 @@ class ProgressGitPuller(GitPuller):
             yield from super().update()
 
 
+class Update(TypedDict):
+    progress: float
+    message: str
+
+
 class SyncHandlerBase(JupyterHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -108,13 +119,18 @@ class SyncHandlerBase(JupyterHandler):
         if "pull_status_queues" not in self.settings:
             self.settings["pull_status_queues"] = defaultdict(Queue)
 
-        # store the most recent message from each queue to re-emit when client re-connects
-        self.last_message = {}
+        if "last_message" not in self.settings:
+            self.settings["last_message"] = {}
 
         # We use this lock to make sure that only one sync operation
         # can be happening at a time. Git doesn't like concurrent use!
         if "git_lock" not in self.settings:
             self.settings["git_lock"] = locks.Lock()
+
+        if "enqueue_task" not in self.settings:
+            task = asyncio.create_task(self._enqueue_messages())
+            self.settings["enqueue_task"] = task
+            task.add_done_callback(lambda task: self.settings.pop("enqueue_task"))
 
     def get_login_url(self):
         # raise on failed auth, not redirect
@@ -136,14 +152,14 @@ class SyncHandlerBase(JupyterHandler):
     ):
         q = self.settings["pull_status_queues"][exhibit_id]
         try:
-            q.put_nowait({"phase": "waiting", "message": "Waiting for a git lock"})
-            await self.git_lock.acquire(1)
+            q.put_nowait(Update(progress=0.01, message="Waiting for a lock"))
+            await self.git_lock.acquire(5)
+            q.put_nowait(Update(progress=0.02, message="Lock acquired"))
         except gen.TimeoutError:
             q.put_nowait(
-                {
-                    "phase": "error",
-                    "message": "Another git operations is currently running, try again in a few minutes",
-                }
+                gen.TimeoutError(
+                    "Another git operations is currently running, try again in a few minutes"
+                )
             )
             return
 
@@ -180,8 +196,8 @@ class SyncHandlerBase(JupyterHandler):
 
             def pull():
                 try:
-                    for line in gp.pull():
-                        q.put_nowait(line)
+                    for update in gp.pull():
+                        q.put_nowait(update)
                     # Sentinel when we're done
                     q.put_nowait(None)
                 except Exception as e:
@@ -199,23 +215,15 @@ class SyncHandlerBase(JupyterHandler):
         self.write("data: {}\n\n".format(serialized_data))
         await self.flush()
 
-    async def _stream(self):
-        # We gonna send out event streams!
-        self.set_header("content-type", "text/event-stream")
-        self.set_header("cache-control", "no-cache")
-
-        # start by re-emitting last message so that client can catch up after reconnecting
-        for _exhibit_id, msg in self.last_message.items():
-            await self.emit(msg)
-
+    async def _enqueue_messages(self):
+        last_message = self.settings["last_message"]
         queues = self.settings["pull_status_queues"]
-
-        # stream new messages as they are put on respective queues
         while True:
             empty_queues = 0
             # copy to avoid error due to size change during iteration:
             queues_view = queues.copy()
             for exhibit_id, q in queues_view.items():
+                # try to consume next message
                 try:
                     progress = q.get_nowait()
                 except Empty:
@@ -252,12 +260,45 @@ class SyncHandlerBase(JupyterHandler):
                         "exhibit_id": exhibit_id,
                     }
 
-                self.last_message[exhibit_id] = msg
-                try:
-                    await self.emit(msg)
-                except StreamClosedError:
-                    self.log.warn("git puller stream got closed")
-                    pass
+                last_message[exhibit_id] = msg
 
             if empty_queues == len(queues_view):
-                await gen.sleep(0.5)
+                await gen.sleep(0.1)
+
+    async def _stream(self):
+        # We gonna send out event streams!
+        self.set_header("content-type", "text/event-stream")
+        self.set_header("cache-control", "no-cache")
+
+        # https://bugzilla.mozilla.org/show_bug.cgi?id=833462
+        await self.emit({"phase": "connected"})
+
+        last_message = self.settings["last_message"]
+        last_message_sent = {}
+
+        # stream new messages as they are put on respective queues
+        while True:
+            messages_view = last_message.copy()
+            unchanged = 0
+            for exhibit_id, msg in messages_view.items():
+                # emit an update if anything changed
+                if last_message_sent.get(exhibit_id) == msg:
+                    unchanged += 1
+                    continue
+                last_message_sent[exhibit_id] = msg
+                try:
+                    await self.emit(msg)
+                except StreamClosedError as e:
+                    # this is expected to happen whenever client closes (e.g. user
+                    # closes the browser or refreshes the tab with JupterLab)
+                    if e.real_error:
+                        self.warn.info(
+                            f"git puller stream got closed with error {e.real_error}"
+                        )
+                    else:
+                        self.log.info("git puller stream closed")
+                    # return to stop reading messages, so that the next
+                    # client who connects can consume them
+                    return
+            if unchanged == len(messages_view):
+                await gen.sleep(0.1)

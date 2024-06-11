@@ -83,5 +83,9 @@ export function eventStream(
   eventSource.addEventListener('error', error => {
     onError(error);
   });
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=833462
+  window.addEventListener('beforeunload', () => {
+    eventSource.close();
+  });
   return eventSource;
 }
