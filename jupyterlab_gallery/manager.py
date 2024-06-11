@@ -1,10 +1,11 @@
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
+from threading import Thread
 
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Dict, List, Unicode
-from threading import Thread
 
 from .git_utils import (
     extract_repository_owner,
@@ -15,7 +16,7 @@ from .git_utils import (
 
 
 class GalleryManager(LoggingConfigurable):
-    _has_updates: dict[str, bool | None] = defaultdict(lambda: None)
+    _has_updates: dict[str, Optional[bool]] = defaultdict(lambda: None)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
