@@ -19,5 +19,5 @@ export interface IExhibit {
   localPath: string;
   revision: string;
   lastUpdated: string;
-  updatesAvailable: boolean;
+  updatesAvailable?: boolean;
 }

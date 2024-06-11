@@ -1,8 +1,10 @@
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Dict, List, Unicode
+from threading import Thread
 
 from .git_utils import (
     extract_repository_owner,
@@ -13,6 +15,12 @@ from .git_utils import (
 
 
 class GalleryManager(LoggingConfigurable):
+    _has_updates: dict[str, bool | None] = defaultdict(lambda: None)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._background_tasks = set()
+
     root_dir = Unicode(
         config=False,
         allow_none=True,
@@ -71,6 +79,13 @@ class GalleryManager(LoggingConfigurable):
         repository_name = extract_repository_name(exhibit["git"])
         return clone_destination / repository_name
 
+    def _check_updates(self, exhibit):
+        local_path = self.get_local_path(exhibit)
+        with git_credentials(
+            account=exhibit.get("account"), token=exhibit.get("token")
+        ):
+            self._has_updates[local_path] = has_updates(local_path)
+
     def get_exhibit_data(self, exhibit):
         data = {}
 
@@ -90,14 +105,16 @@ class GalleryManager(LoggingConfigurable):
         data["isCloned"] = exists
         if exists:
             fetch_head = local_path / ".git" / "FETCH_HEAD"
-            if fetch_head.exists():
+            head = local_path / ".git" / "HEAD"
+            date_head = fetch_head if fetch_head.exists() else head
+            if date_head.exists():
                 data["lastUpdated"] = datetime.fromtimestamp(
-                    fetch_head.stat().st_mtime
+                    date_head.stat().st_mtime
                 ).isoformat()
-            with git_credentials(
-                account=exhibit.get("account"), token=exhibit.get("token")
-            ):
-                # TODO: this is blocking initial load; can we make it async?
-                data["updatesAvailable"] = has_updates(local_path)
+            data["updatesAvailable"] = self._has_updates[local_path]
 
+            def check_updates():
+                self._check_updates(exhibit)
+
+            Thread(target=check_updates).start()
         return data

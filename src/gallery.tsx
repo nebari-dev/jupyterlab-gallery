@@ -4,7 +4,8 @@ import {
   Button,
   UseSignal,
   folderIcon,
-  downloadIcon
+  downloadIcon,
+  refreshIcon
 } from '@jupyterlab/ui-components';
 import { Contents } from '@jupyterlab/services';
 import { IStream, Stream, Signal } from '@lumino/signaling';
@@ -19,12 +20,14 @@ interface IActions {
 }
 
 export class GalleryWidget extends ReactWidget {
-  constructor(options: {
-    trans: TranslationBundle;
-    openPath: (path: string) => void;
-    fileChanged: Contents.IManager['fileChanged'];
-    refreshFileBrowser: () => Promise<void>;
-  }) {
+  constructor(
+    protected options: {
+      trans: TranslationBundle;
+      openPath: (path: string) => void;
+      fileChanged: Contents.IManager['fileChanged'];
+      refreshFileBrowser: () => Promise<void>;
+    }
+  ) {
     super();
     const { trans, fileChanged } = options;
     this._trans = trans;
@@ -37,23 +40,24 @@ export class GalleryWidget extends ReactWidget {
       },
       download: async (exhibit: IExhibit) => {
         const done = new Promise<void>((resolve, reject) => {
-          this._stream.connect((_, e) => {
+          const promiseResolver = (_: GalleryWidget, e: IStreamMessage) => {
             if (e.exhibit_id === exhibit.id) {
               if (e.phase === 'finished') {
                 resolve();
+                this._stream.disconnect(promiseResolver);
               } else if (e.phase === 'error') {
                 reject();
+                this._stream.disconnect(promiseResolver);
               }
             }
-          });
+          };
+          this._stream.connect(promiseResolver);
         });
         await requestAPI('pull', {
           method: 'POST',
           body: JSON.stringify({ exhibit_id: exhibit.id })
         });
         await done;
-        await this._load();
-        await options.refreshFileBrowser();
       }
     };
     // if user deletes a directory, reload the state
@@ -72,13 +76,22 @@ export class GalleryWidget extends ReactWidget {
         console.error(error);
       }
     );
+    this._stream.connect(this._reloadOnFinish);
     void this._load();
   }
 
   dispose() {
     super.dispose();
     this._eventSource.close();
+    this._stream.disconnect(this._reloadOnFinish);
   }
+
+  private _reloadOnFinish = async (_: GalleryWidget, e: IStreamMessage) => {
+    if (e.phase === 'finished') {
+      await this._load();
+      await this.options.refreshFileBrowser();
+    }
+  };
 
   private _eventSource: EventSource;
 
@@ -86,6 +99,13 @@ export class GalleryWidget extends ReactWidget {
     try {
       const data = await requestAPI<IExhibitReply>('exhibits');
       this.exhibits = data.exhibits;
+      const allStatusesKnown = this.exhibits.every(
+        exhibit =>
+          !exhibit.isCloned || typeof exhibit.updatesAvailable === 'boolean'
+      );
+      if (!allStatusesKnown) {
+        setTimeout(() => this._load(), 1000);
+      }
     } catch (reason) {
       this._status = `jupyterlab_gallery server failed:\n${reason}`;
     }
@@ -175,18 +195,24 @@ function Exhibit(props: {
       if (exhibitId !== exhibit.id) {
         return;
       }
-      if (message.phase === 'error') {
-        showErrorMessage(
-          'Could not download',
-          message.output ?? 'Unknown error'
-        );
-      }
-      if (message.phase === 'progress') {
-        setProgress(message.output);
-        setProgressMessage(message.output.message);
-      } else {
-        const { output, phase } = message;
-        console.log(output + phase);
+
+      switch (message.phase) {
+        case 'error':
+          showErrorMessage(
+            'Could not download',
+            message.output ?? 'Unknown error'
+          );
+          break;
+        case 'progress':
+          setProgress(message.output);
+          setProgressMessage(message.output.message);
+          break;
+        case 'finished':
+          setProgress(null);
+          break;
+        default:
+          console.warn('Unhandled message', message);
+          break;
       }
     };
     props.progressStream.connect(listenToStreams);
@@ -194,6 +220,7 @@ function Exhibit(props: {
       props.progressStream.disconnect(listenToStreams);
     };
   });
+  const updateStatusKnown = typeof exhibit.updatesAvailable === 'boolean';
   return (
     <div className="jp-Exhibit">
       <h4 className="jp-Exhibit-title">{exhibit.title}</h4>
@@ -222,12 +249,11 @@ function Exhibit(props: {
             onClick={async () => {
               setProgressMessage('Downloading');
               setProgress({
-                progress: 0.01,
+                progress: 0.0,
                 message: 'Initializing'
               });
               try {
                 await actions.download(exhibit);
-                setProgress(null);
               } catch {
                 setProgress({
                   ...(progress as any),
@@ -253,7 +279,11 @@ function Exhibit(props: {
             <Button
               disabled={!exhibit.updatesAvailable}
               minimal={true}
-              title={props.trans.__('Fetch latest changes')}
+              title={
+                updateStatusKnown
+                  ? props.trans.__('Fetch latest changes')
+                  : props.trans.__('Checking upstream status')
+              }
               onClick={async () => {
                 setProgressMessage('Refreshing');
                 setProgress({
@@ -272,7 +302,11 @@ function Exhibit(props: {
                 }
               }}
             >
-              <downloadIcon.react />
+              {updateStatusKnown ? (
+                <downloadIcon.react />
+              ) : (
+                <refreshIcon.react className="jp-spinningIcon" />
+              )}
             </Button>
           </>
         )}

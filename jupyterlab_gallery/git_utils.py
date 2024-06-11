@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 from subprocess import run
+from threading import Lock
 from typing import Optional
 import re
 import os
@@ -42,9 +43,13 @@ def has_updates(repo_path: Path) -> bool:
     return data["behind"] is not None
 
 
+_git_credential_lock = Lock()
+
+
 @contextmanager
 def git_credentials(token: Optional[str], account: Optional[str]):
     if token and account:
+        _git_credential_lock.acquire()
         try:
             path = Path(__file__).parent
             os.environ["GIT_ASKPASS"] = str(path / "git_askpass.py")
@@ -59,5 +64,6 @@ def git_credentials(token: Optional[str], account: Optional[str]):
             del os.environ["GIT_PULLER_TOKEN"]
             del os.environ["GIT_TERMINAL_PROMPT"]
             del os.environ["GIT_ASKPASS"]
+            _git_credential_lock.release()
     else:
         yield
