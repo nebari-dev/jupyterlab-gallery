@@ -54,20 +54,7 @@ class GalleryManager(LoggingConfigurable):
         ),
         config=True,
         allow_none=False,
-        default_value=[
-            {
-                "git": "https://github.com/nebari-dev/nebari.git",
-                "homepage": "https://github.com/nebari-dev/nebari/",
-                "title": "Nebari",
-                "description": "🪴 Nebari - your open source data science platform",
-            },
-            {
-                "git": "https://github.com/nebari-dev/nebari-docker-images.git",
-                "homepage": "https://github.com/nebari-dev/nebari-docker-images/",
-                "title": "Nebari docker images",
-                "description": "Nebari Docker images",
-            },
-        ],
+        default_value=[],
     )
 
     destination = Unicode(
