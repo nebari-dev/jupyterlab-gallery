@@ -64,7 +64,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     const title = data.title === 'Gallery' ? trans.__('Gallery') : data.title;
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
-    if (launcher && isNewLauncher(launcher)) {
+    if (launcher && isNewLauncher(launcher) && data.exhibitsConfigured) {
       launcher.addSection({
         title,
         className: 'jp-Launcher-openExample',

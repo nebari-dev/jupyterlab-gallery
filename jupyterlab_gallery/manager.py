@@ -31,36 +31,30 @@ class GalleryManager(LoggingConfigurable):
         Dict(
             per_key_traits={
                 "git": Unicode(help="Git URL used for cloning"),
-                "homepage": Unicode(help="User-facing URL to open if any"),
                 "title": Unicode(help="Name of the exhibit"),
-                "description": Unicode(help="Short description"),
+                "homepage": Unicode(
+                    help="User-facing URL to open if any", allow_none=True
+                ),
+                "description": Unicode(help="Short description", allow_none=True),
                 "token": Unicode(
-                    help="Personal access token - required if the repository is private"
+                    help="Personal access token - required if the repository is private",
+                    allow_none=True,
                 ),
                 "account": Unicode(
-                    help="Username or name of application - required if the repository is private"
+                    help="Username or name of application - required if the repository is private",
+                    allow_none=True,
                 ),
                 # TODO: validate path exists
-                "icon": Unicode(help="Path to an svg or png, or base64 encoded string"),
+                "icon": Unicode(
+                    help="Path to an svg or png, or base64 encoded string",
+                    allow_none=True,
+                ),
                 # other ideas: `path_in_repository`, `documentation_url`
             }
         ),
         config=True,
         allow_none=False,
-        default_value=[
-            {
-                "git": "https://github.com/nebari-dev/nebari.git",
-                "homepage": "https://github.com/nebari-dev/nebari/",
-                "title": "Nebari",
-                "description": "🪴 Nebari - your open source data science platform",
-            },
-            {
-                "git": "https://github.com/nebari-dev/nebari-docker-images.git",
-                "homepage": "https://github.com/nebari-dev/nebari-docker-images/",
-                "title": "Nebari docker images",
-                "description": "Nebari Docker images",
-            },
-        ],
+        default_value=[],
     )
 
     destination = Unicode(

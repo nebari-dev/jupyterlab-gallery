@@ -26,6 +26,7 @@ class GalleryHandler(BaseHandler):
             json.dumps(
                 {
                     "title": self.gallery_manager.title,
+                    "exhibitsConfigured": len(self.gallery_manager.exhibits) != 0,
                     "apiVersion": "1.0",
                 }
             )

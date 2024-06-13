@@ -1,6 +1,7 @@
 export interface IGalleryReply {
   title: string;
   apiVersion: string;
+  exhibitsConfigured: boolean;
 }
 
 export interface IExhibitReply {
