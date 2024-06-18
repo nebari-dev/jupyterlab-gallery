@@ -27,6 +27,7 @@ class GalleryHandler(BaseHandler):
                 {
                     "title": self.gallery_manager.title,
                     "exhibitsConfigured": len(self.gallery_manager.exhibits) != 0,
+                    "hideGalleryWithoutExhibits": self.gallery_manager.hideGalleryWithoutExhibits,
                     "apiVersion": "1.0",
                 }
             )

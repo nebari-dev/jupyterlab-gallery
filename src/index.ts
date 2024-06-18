@@ -61,8 +61,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
         `jupyter-gallery API version out of sync, expected ${expectedVersion}, got ${data.apiVersion}`
       );
     }
-
     const title = data.title === 'Gallery' ? trans.__('Gallery') : data.title;
+    
+    // hide the widget if no exhibits are configured
+    if (data.hideGalleryWithoutExhibits && !data.exhibitsConfigured) { return }
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
     if (launcher && isNewLauncher(launcher) && data.exhibitsConfigured) {
       launcher.addSection({
@@ -83,6 +85,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       widget.show();
       app.shell.add(widget, 'left', { rank: 850 });
     }
+
 
     try {
       const settings = await settingRegistry.load(plugin.id);

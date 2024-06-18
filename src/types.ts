@@ -2,6 +2,7 @@ export interface IGalleryReply {
   title: string;
   apiVersion: string;
   exhibitsConfigured: boolean;
+  hideGalleryWithoutExhibits: boolean;
 }
 
 export interface IExhibitReply {

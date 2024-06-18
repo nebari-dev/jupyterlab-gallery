@@ -5,7 +5,7 @@ from typing import Optional
 from threading import Thread
 
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets import Dict, List, Unicode
+from traitlets import Dict, List, Unicode, Bool
 
 from .git_utils import (
     extract_repository_owner,
@@ -67,6 +67,12 @@ class GalleryManager(LoggingConfigurable):
         help="The the display name of the Gallery widget",
         default_value="Gallery",
         config=True,
+    )
+
+    hideGalleryWithoutExhibits = Bool(
+        help="Hide Gallery if not exhibits are configured",
+        default_value=False,
+        config=True
     )
 
     def get_local_path(self, exhibit) -> Path:
