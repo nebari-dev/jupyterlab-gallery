@@ -65,6 +65,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
 
     // hide the widget if no exhibits are configured
     if (data.hideGalleryWithoutExhibits && !data.exhibitsConfigured) {
+      console.log('Gallery extension will not add any UI elements because no exhibits are configured');
       return;
     }
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
