@@ -68,7 +68,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       return;
     }
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
-    if (launcher && isNewLauncher(launcher) && data.exhibitsConfigured) {
+    if (launcher && isNewLauncher(launcher)) {
       launcher.addSection({
         title,
         className: 'jp-Launcher-openExample',
