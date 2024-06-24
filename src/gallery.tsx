@@ -224,76 +224,23 @@ function Exhibit(props: {
   return (
     <div className="jp-Exhibit">
       <h4 className="jp-Exhibit-title">{exhibit.title}</h4>
-      <div className="jp-Exhibit-icon">
-        <img src={exhibit.icon} alt={exhibit.title} />
-      </div>
-      <div className="jp-Exhibit-description">{exhibit.description}</div>
-      {progress ? (
-        <div
-          className={
-            'jp-Exhibit-progressbar' +
-            (progress.state === 'error' ? ' jp-Exhibit-progressbar-error' : '')
-          }
-        >
-          <div
-            className="jp-Exhibit-progressbar-filler"
-            style={{ width: progress.progress * 100 + '%' }}
-          ></div>
-          <div className="jp-Exhibit-progressMessage">{progressMessage}</div>
+      <div className="jp-Exhibit-middle">
+        <div className="jp-Exhibit-icon">
+          <img src={exhibit.icon} alt={exhibit.title} />
         </div>
-      ) : null}
-      <div className="jp-Exhibit-buttons">
-        {!exhibit.isCloned ? (
-          <Button
-            minimal={true}
-            title={props.trans.__('Set up')}
-            onClick={async () => {
-              setProgressMessage('Downloading');
-              setProgress({
-                progress: 0.0,
-                message: 'Initializing'
-              });
-              try {
-                await actions.download(exhibit);
-              } catch {
-                setProgress({
-                  ...(progress as any),
-                  state: 'error'
-                });
-                setProgressMessage('');
-              }
-            }}
-          >
-            <downloadIcon.react />
-          </Button>
-        ) : (
-          <>
+        <div className="jp-Exhibit-buttons">
+          {!exhibit.isCloned ? (
             <Button
               minimal={true}
-              title={props.trans.__('Open')}
-              onClick={() => {
-                actions.open(exhibit);
-              }}
-            >
-              <folderIcon.react />
-            </Button>
-            <Button
-              disabled={!exhibit.updatesAvailable}
-              minimal={true}
-              title={
-                updateStatusKnown
-                  ? props.trans.__('Fetch latest changes')
-                  : props.trans.__('Checking upstream status')
-              }
+              title={props.trans.__('Set up')}
               onClick={async () => {
-                setProgressMessage('Refreshing');
+                setProgressMessage('Downloading');
                 setProgress({
-                  progress: 0.25,
-                  message: 'Refreshing'
+                  progress: 0.0,
+                  message: 'Initializing'
                 });
                 try {
                   await actions.download(exhibit);
-                  setProgress(null);
                 } catch {
                   setProgress({
                     ...(progress as any),
@@ -303,14 +250,73 @@ function Exhibit(props: {
                 }
               }}
             >
-              {updateStatusKnown ? (
-                <downloadIcon.react />
-              ) : (
-                <refreshIcon.react className="jp-spinningIcon" />
-              )}
+              <downloadIcon.react />
             </Button>
-          </>
-        )}
+          ) : (
+            <>
+              <Button
+                minimal={true}
+                title={props.trans.__('Open')}
+                onClick={() => {
+                  actions.open(exhibit);
+                }}
+              >
+                <folderIcon.react />
+              </Button>
+              <Button
+                disabled={!exhibit.updatesAvailable}
+                minimal={true}
+                title={
+                  updateStatusKnown
+                    ? props.trans.__('Fetch latest changes')
+                    : props.trans.__('Checking upstream status')
+                }
+                onClick={async () => {
+                  setProgressMessage('Refreshing');
+                  setProgress({
+                    progress: 0.25,
+                    message: 'Refreshing'
+                  });
+                  try {
+                    await actions.download(exhibit);
+                    setProgress(null);
+                  } catch {
+                    setProgress({
+                      ...(progress as any),
+                      state: 'error'
+                    });
+                    setProgressMessage('');
+                  }
+                }}
+              >
+                {updateStatusKnown ? (
+                  <downloadIcon.react />
+                ) : (
+                  <refreshIcon.react className="jp-spinningIcon" />
+                )}
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="jp-Exhibit-bottom">
+        {progress ? (
+          <div
+            className={
+              'jp-Exhibit-progressbar' +
+              (progress.state === 'error'
+                ? ' jp-Exhibit-progressbar-error'
+                : '')
+            }
+          >
+            <div
+              className="jp-Exhibit-progressbar-filler"
+              style={{ width: progress.progress * 100 + '%' }}
+            ></div>
+            <div className="jp-Exhibit-progressMessage">{progressMessage}</div>
+          </div>
+        ) : null}
+        <div className="jp-Exhibit-description">{exhibit.description}</div>
       </div>
     </div>
   );
