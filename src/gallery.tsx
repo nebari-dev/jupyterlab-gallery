@@ -245,6 +245,7 @@ function Exhibit(props: {
       <div className="jp-Exhibit-buttons">
         {!exhibit.isCloned ? (
           <Button
+            minimal={true}
             title={props.trans.__('Set up')}
             onClick={async () => {
               setProgressMessage('Downloading');
