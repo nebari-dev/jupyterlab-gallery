@@ -69,7 +69,7 @@ class GalleryManager(LoggingConfigurable):
         config=True,
     )
 
-    hideGalleryWithoutExhibits = Bool(
+    hide_gallery_without_exhibits = Bool(
         help="Hide Gallery if no exhibits are configured",
         default_value=False,
         config=True
