@@ -4,5 +4,4 @@ set -e
 
 echo $@
 
-exec jupyter-lab "${@:4}" --config jupyter_gallery_config.json
-
+exec jupyter-lab "${@:4}" --config binder/jupyter_gallery_config.json
