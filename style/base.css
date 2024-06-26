@@ -12,12 +12,12 @@
 
 .jp-Exhibit {
   --jp-exhibit-bottom-reserved: 2.6lh;
-  --jp-exhibit-bottom-collapsed: 2.2lh;
+  --jp-exhibit-bottom-collapsed: 2.3lh;
   --jp-exhibit-bottom-expanded: 3.2lh;
 
   border: 1px solid var(--jp-border-color1);
   border-radius: 4px;
-  margin: 12px 4px;
+  margin: 6px;
   padding: 4px 8px;
   max-width: 200px;
   position: relative;
@@ -35,6 +35,7 @@
 .jp-Exhibit-description {
   padding: 2px;
   min-height: 1.6lh;
+  cursor: default;
 }
 
 .jp-Exhibit-icon > img {
