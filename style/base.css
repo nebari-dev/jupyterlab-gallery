@@ -25,6 +25,7 @@
   flex-direction: column;
   overflow: hidden;
   padding-bottom: var(--jp-exhibit-bottom-reserved);
+  min-width: 150px;
 }
 
 .jp-Exhibit-title {
@@ -54,7 +55,7 @@
 }
 
 .jp-Launcher-openExample .jp-Gallery {
-  display: contents;
+  width: 100%;
 }
 
 .jp-Exhibit-progressbar-filler {
