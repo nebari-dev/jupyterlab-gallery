@@ -70,11 +70,17 @@ export function eventStream(
   onError: (error: Event) => void
 ): EventSource {
   const settings = ServerConnection.makeSettings();
-  const requestUrl = URLExt.join(
+  let requestUrl = URLExt.join(
     settings.baseUrl,
     'jupyterlab-gallery', // API Namespace
     endPoint
   );
+  const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
+  if (xsrfTokenMatch) {
+    const fullUrl = new URL(requestUrl);
+    fullUrl.searchParams.append('_xsrf', xsrfTokenMatch[1]);
+    requestUrl = fullUrl.toString();
+  }
   const eventSource = new EventSource(requestUrl);
   eventSource.addEventListener('message', event => {
     const data = JSON.parse(event.data);
