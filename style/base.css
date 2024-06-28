@@ -3,12 +3,29 @@
 
     https://jupyterlab.readthedocs.io/en/stable/developer/css.html
 */
+.jp-Gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 200px));
+  grid-auto-rows: 1fr;
+  justify-content: center;
+}
+
 .jp-Exhibit {
+  --jp-exhibit-bottom-reserved: 2.6lh;
+  --jp-exhibit-bottom-collapsed: 2.3lh;
+  --jp-exhibit-bottom-expanded: 3.2lh;
+
   border: 1px solid var(--jp-border-color1);
   border-radius: 4px;
-  margin: 12px;
+  margin: 6px;
   padding: 4px 8px;
   max-width: 200px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: var(--jp-exhibit-bottom-reserved);
+  min-width: 150px;
 }
 
 .jp-Exhibit-title {
@@ -17,8 +34,8 @@
 
 .jp-Exhibit-description {
   padding: 2px;
-  height: 2.15em;
-  overflow: hidden;
+  min-height: 1.6lh;
+  cursor: default;
 }
 
 .jp-Exhibit-icon > img {
@@ -29,10 +46,17 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  height: 100%;
+}
+
+.jp-Exhibit-middle {
+  flex-grow: 1;
+  position: relative;
+  margin: 4px 0;
 }
 
 .jp-Launcher-openExample .jp-Gallery {
-  display: contents;
+  width: 100%;
 }
 
 .jp-Exhibit-progressbar-filler {
@@ -45,7 +69,6 @@
   border: 1px solid var(--jp-layout-color3);
   background: var(--jp-layout-color2);
   width: 100%;
-  margin-bottom: 10px;
   border-radius: 2px;
   position: relative;
 }
@@ -65,7 +88,62 @@
   text-overflow: ellipsis;
 }
 
-.jp-Exhibit-buttons .jp-Button:disabled {
+.jp-Exhibit-buttons {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  display: flex;
+  opacity: 0;
+  box-sizing: border-box;
+  transition-property: opacity;
+  transition-duration: 200ms;
+  border-radius: inherit;
+  padding: 0 40px;
+}
+
+.jp-Exhibit .jp-Exhibit-icon {
+  transition-property: filter;
+  transition-duration: 200ms;
+}
+
+.jp-Exhibit:hover .jp-Exhibit-icon {
+  filter: blur(10px);
+}
+
+.jp-Exhibit:hover .jp-Exhibit-buttons {
+  opacity: 1;
+}
+
+.jp-Exhibit-bottom {
+  position: absolute;
+  transition-property: max-height;
+  transition-duration: 200ms;
+  max-height: var(--jp-exhibit-bottom-collapsed);
+  bottom: 0;
+  margin-left: -8px;
+  padding: 0 4px;
+}
+
+.jp-Exhibit:hover .jp-Exhibit-bottom {
+  max-height: var(--jp-exhibit-bottom-expanded);
+}
+
+.jp-Exhibit-buttons > .jp-Button {
+  margin: auto;
+  outline: 2px solid transparent;
+  background: var(--jp-layout-color2);
+  border: 1px solid var(--jp-border-color1);
+  height: 35px;
+  width: 35px;
+}
+
+.jp-Exhibit-buttons > .jp-Button:hover {
+  background: var(--jp-layout-color0);
+}
+
+.jp-Exhibit-buttons > .jp-Button:disabled {
   opacity: 0.3;
 }
 
