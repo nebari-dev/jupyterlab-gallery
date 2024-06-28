@@ -61,10 +61,17 @@ const plugin: JupyterFrontEndPlugin<void> = {
         `jupyter-gallery API version out of sync, expected ${expectedVersion}, got ${data.apiVersion}`
       );
     }
-
     const title = data.title === 'Gallery' ? trans.__('Gallery') : data.title;
+
+    // hide the widget if no exhibits are configured
+    if (data.hideGalleryWithoutExhibits && !data.exhibitsConfigured) {
+      console.log(
+        'Gallery extension will not add any UI elements because no exhibits are configured'
+      );
+      return;
+    }
     // add the widget to sidebar before waiting for server reply to reduce UI jitter
-    if (launcher && isNewLauncher(launcher) && data.exhibitsConfigured) {
+    if (launcher && isNewLauncher(launcher)) {
       launcher.addSection({
         title,
         className: 'jp-Launcher-openExample',
