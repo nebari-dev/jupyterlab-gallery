@@ -63,7 +63,12 @@ class PullHandler(BaseHandler, SyncHandlerBase):
     async def post(self):
         data = self.get_json_body()
         exhibit_id = data["exhibit_id"]
-        exhibit = self.gallery_manager.exhibits[exhibit_id]
+        try:
+            exhibit = self.gallery_manager.exhibits[exhibit_id]
+        except IndexError:
+            self.set_status(406)
+            self.finish(json.dumps({"message": f"exhibit_id {exhibit_id} not found"}))
+            return
         return await super()._pull(
             repo=exhibit["git"],
             exhibit_id=exhibit_id,
