@@ -53,9 +53,16 @@ export class GalleryWidget extends ReactWidget {
           };
           this._stream.connect(promiseResolver);
         });
+        const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
+        const args: Record<string, string | number> = {
+          exhibit_id: exhibit.id
+        };
+        if (xsrfTokenMatch) {
+          args['_xsrf'] = xsrfTokenMatch[1];
+        }
         await requestAPI('pull', {
           method: 'POST',
-          body: JSON.stringify({ exhibit_id: exhibit.id })
+          body: JSON.stringify(args)
         });
         await done;
       }
