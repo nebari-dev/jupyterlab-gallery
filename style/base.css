@@ -44,7 +44,7 @@
 }
 
 .jp-Exhibit-icon > .jp-exhibitPlaceholder > svg {
-  max-width: 100%;
+  min-width: 40px;
   block-size: 100%;
 }
 
