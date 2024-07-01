@@ -124,6 +124,7 @@
   bottom: 0;
   margin-left: -8px;
   padding: 0 4px;
+  width: calc(100% - 8px);
 }
 
 .jp-Exhibit:hover .jp-Exhibit-bottom {
