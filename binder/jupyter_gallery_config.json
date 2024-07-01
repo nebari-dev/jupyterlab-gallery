@@ -27,6 +27,15 @@
         "homepage": "https://github.com/amueller/scipy-2018-sklearn",
         "title": "Scikit-learn Tutorial 2018",
         "description": "SciPy 2018 Scikit-learn Tutorial"
+      },
+      {
+        "git": "https://github.com/jupyter-widgets/tutorial.git",
+        "title": "Example without description"
+      },
+      {
+        "git": "https://gitlab.gnome.org/GNOME/atomix.git",
+        "title": "GNOME atomix",
+        "description": "Example without icon"
       }
     ]
   }
