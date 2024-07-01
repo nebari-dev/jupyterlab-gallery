@@ -234,12 +234,11 @@ function Exhibit(props: {
       <h4 className="jp-Exhibit-title">{exhibit.title}</h4>
       <div className="jp-Exhibit-middle">
         <div className="jp-Exhibit-icon">
-          {
-            exhibit.icon ?
+          {exhibit.icon ? (
             <img src={exhibit.icon} alt={exhibit.title} />
-            :
+          ) : (
             <repositoryIcon.react className="jp-exhibitPlaceholder" />
-          }
+          )}
         </div>
         <div className="jp-Exhibit-buttons">
           {!exhibit.isCloned ? (

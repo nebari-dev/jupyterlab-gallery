@@ -38,7 +38,8 @@
   cursor: default;
 }
 
-.jp-Exhibit-icon > img, .jp-Exhibit-icon > .jp-exhibitPlaceholder > svg {
+.jp-Exhibit-icon > img,
+.jp-Exhibit-icon > .jp-exhibitPlaceholder > svg {
   max-width: 100%;
 }
 
