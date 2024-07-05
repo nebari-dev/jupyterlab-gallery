@@ -36,6 +36,13 @@
         "git": "https://gitlab.gnome.org/GNOME/atomix.git",
         "title": "GNOME atomix",
         "description": "Example without icon"
+      },
+      {
+        "git": "https://github.com/nebari-dev/nebari.git",
+        "homepage": "https://github.com/nebari-dev/nebari",
+        "title": "Empty icon",
+        "description": "Empty icon should show social card for GitHub repos",
+        "icon": ""
       }
     ]
   }
