@@ -10,7 +10,7 @@ import tornado
 # We do not want to expose `git_url` as it may contain PAT;
 # we want an allow-list over block-list to avoid exposing PAT in case
 # if the author of the config makes a typo like `giit` instead of `git`.
-EXPOSED_EXHIBIT_KEYS = ["repository", "title", "description", "icon"]
+EXPOSED_EXHIBIT_KEYS = ["homepage", "title", "description", "icon"]
 
 
 class BaseHandler(APIHandler):
