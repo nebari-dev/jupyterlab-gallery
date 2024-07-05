@@ -53,8 +53,8 @@ class ExhibitsHandler(BaseHandler):
     def _prepare_exhibit(self, exhibit, exhibit_id: int) -> dict:
         exposed_config = {k: v for k, v in exhibit.items() if k in EXPOSED_EXHIBIT_KEYS}
         return {
-            **self.gallery_manager.get_exhibit_data(exhibit),
             **exposed_config,
+            **self.gallery_manager.get_exhibit_data(exhibit),
             "id": exhibit_id,
         }
 
