@@ -90,7 +90,7 @@ class GalleryManager(LoggingConfigurable):
     def get_exhibit_data(self, exhibit):
         data = {}
 
-        if "icon" not in exhibit:
+        if "icon" not in exhibit or not exhibit["icon"]:
             homepage = exhibit.get("homepage")
             if homepage and homepage.startswith("https://github.com/"):
                 repository_name = extract_repository_name(exhibit["git"])
