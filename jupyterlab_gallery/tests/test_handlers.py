@@ -1,6 +1,10 @@
 import json
+from unittest import mock
+import pytest
 
 from jupyter_server.utils import url_path_join
+
+from jupyterlab_gallery.manager import GalleryManager
 
 
 async def test_exhibits(jp_fetch):
@@ -8,6 +12,26 @@ async def test_exhibits(jp_fetch):
     assert response.code == 200
     payload = json.loads(response.body)
     assert isinstance(payload["exhibits"], list)
+
+
+@pytest.mark.parametrize("exhibit", [
+    {
+        "git": "https://github.com/nebari-dev/nebari.git",
+        "homepage": "https://github.com/nebari-dev/nebari"
+    },
+    {
+        "git": "https://github.com/nebari-dev/nebari.git",
+        "homepage": "https://github.com/nebari-dev/nebari",
+        "icon": None
+    }
+])
+async def test_exhibit_generate_github_icon(jp_serverapp, jp_fetch, exhibit):
+    with mock.patch.object(GalleryManager, 'exhibits', [exhibit]):
+        response = await jp_fetch("jupyterlab-gallery", "exhibits")
+    assert response.code == 200
+    payload = json.loads(response.body)
+    assert len(payload["exhibits"]) == 1
+    assert payload["exhibits"][0]["icon"] == 'https://opengraph.githubassets.com/1/nebari-dev/nebari'
 
 
 async def test_gallery(jp_fetch):

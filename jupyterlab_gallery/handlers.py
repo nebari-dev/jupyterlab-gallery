@@ -10,7 +10,7 @@ import tornado
 # We do not want to expose `git_url` as it may contain PAT;
 # we want an allow-list over block-list to avoid exposing PAT in case
 # if the author of the config makes a typo like `giit` instead of `git`.
-EXPOSED_EXHIBIT_KEYS = ["repository", "title", "description", "icon"]
+EXPOSED_EXHIBIT_KEYS = ["homepage", "title", "description", "icon"]
 
 
 class BaseHandler(APIHandler):
@@ -53,8 +53,8 @@ class ExhibitsHandler(BaseHandler):
     def _prepare_exhibit(self, exhibit, exhibit_id: int) -> dict:
         exposed_config = {k: v for k, v in exhibit.items() if k in EXPOSED_EXHIBIT_KEYS}
         return {
-            **self.gallery_manager.get_exhibit_data(exhibit),
             **exposed_config,
+            **self.gallery_manager.get_exhibit_data(exhibit),
             "id": exhibit_id,
         }
 
