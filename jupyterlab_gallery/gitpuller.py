@@ -83,6 +83,7 @@ class ProgressGitPuller(GitPuller):
                         self.git_url,
                         self.repo_dir,
                         branch=self.branch_name,
+                        depth=self.depth,
                         progress=progress,
                     )
                 except Exception as e:
@@ -149,6 +150,8 @@ class SyncHandlerBase(JupyterHandler):
         exhibit_id: int,
         token: Optional[str],
         account: Optional[str],
+        branch: Optional[str],
+        depth: Optional[int],
     ):
         q = self.settings["pull_status_queues"][exhibit_id]
         try:
@@ -164,10 +167,6 @@ class SyncHandlerBase(JupyterHandler):
             return
 
         try:
-            branch = self.get_argument("branch", None)
-            depth = self.get_argument("depth", None)
-            if depth:
-                depth = int(depth)
             # The default working directory is the directory from which Jupyter
             # server is launched, which is not the same as the root notebook
             # directory assuming either --notebook-dir= is used from the

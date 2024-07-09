@@ -43,6 +43,12 @@ c.GalleryManager.exhibits = [
         "token": "access-token-for-example-starting-with-github_pat_",
         "title": "My private tutorial",
         "description": "A tutorial which is not public.",
+    },
+    {
+        "git": "https://github.com/my_org/public-tutorial.git",
+        "title": "My tutorial",
+        "branch": "v2024",
+        "depth": 1
     }
 ]
 ```

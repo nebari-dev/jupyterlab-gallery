@@ -5,7 +5,7 @@ from typing import Optional
 from threading import Thread
 
 from traitlets.config.configurable import LoggingConfigurable
-from traitlets import Dict, List, Unicode, Bool
+from traitlets import Dict, List, Unicode, Bool, Int
 
 from .git_utils import (
     extract_repository_owner,
@@ -49,6 +49,12 @@ class GalleryManager(LoggingConfigurable):
                     help="Path to an svg or png, or base64 encoded string",
                     allow_none=True,
                 ),
+                "branch": Unicode(
+                    default_value=None, help="Branch to use", allow_none=True
+                ),
+                "depth": Int(
+                    default_value=None, help="Depth of the clone", allow_none=True
+                ),
                 # other ideas: `path_in_repository`, `documentation_url`
             }
         ),
@@ -72,7 +78,7 @@ class GalleryManager(LoggingConfigurable):
     hide_gallery_without_exhibits = Bool(
         help="Hide Gallery if no exhibits are configured",
         default_value=False,
-        config=True
+        config=True,
     )
 
     def get_local_path(self, exhibit) -> Path:

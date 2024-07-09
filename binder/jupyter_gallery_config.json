@@ -43,6 +43,20 @@
         "title": "Empty icon",
         "description": "Empty icon should show social card for GitHub repos",
         "icon": ""
+      },
+      {
+        "git": "https://github.com/jupyterlab/jupyterlab.git",
+        "homepage": "https://github.com/jupyterlab/jupyterlab",
+        "title": "JupyterLab branch 3.6.x",
+        "branch": "3.6.x",
+        "description": "Cloning a specific branch with 'branch' argument"
+      },
+      {
+        "git": "https://github.com/nebari-dev/nebari.git",
+        "homepage": "https://github.com/nebari-dev/nebari",
+        "title": "Nebari with shallow clone",
+        "depth": 1,
+        "description": "Cloning with 'depth = 1' for faster checkout"
       }
     ]
   }

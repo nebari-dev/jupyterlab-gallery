@@ -70,14 +70,21 @@ class PullHandler(BaseHandler, SyncHandlerBase):
             self.set_status(406)
             self.finish(json.dumps({"message": f"exhibit_id {exhibit_id} not found"}))
             return
+
+        branch = exhibit.get("branch")
+        depth = exhibit.get("depth")
+
+        if depth:
+            depth = int(depth)
+
         return await super()._pull(
             repo=exhibit["git"],
+            targetpath=str(self.gallery_manager.get_local_path(exhibit)),
             exhibit_id=exhibit_id,
             account=exhibit.get("account"),
             token=exhibit.get("token"),
-            # branch
-            # depth
-            targetpath=str(self.gallery_manager.get_local_path(exhibit)),
+            branch=branch,
+            depth=depth,
         )
 
     @tornado.web.authenticated
