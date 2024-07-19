@@ -3,6 +3,12 @@
   "title": "jupyterlab-gallery",
   "description": "jupyterlab-gallery settings.",
   "type": "object",
-  "properties": {},
+  "properties": {
+    "endpoint": {
+      "title": "Server endpoint",
+      "type": "string",
+      "default": "jupyterlab-gallery"
+    }
+  },
   "additionalProperties": false
 }

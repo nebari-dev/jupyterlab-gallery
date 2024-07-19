@@ -37,6 +37,16 @@ const plugin: JupyterFrontEndPlugin<void> = {
   ) => {
     console.log('JupyterLab extension jupyterlab-gallery is activated!');
 
+    let settings: ISettingRegistry.ISettings;
+    try {
+      settings = await settingRegistry.load(plugin.id);
+      console.log('jupyterlab-gallery settings loaded:', settings.composite);
+    } catch (reason) {
+      console.error('Failed to load settings for jupyterlab-gallery.', reason);
+      return;
+    }
+    const serverAPI = settings.composite.namespace as string;
+
     translator = translator ?? nullTranslator;
     const trans = translator.load('jupyterlab-gallery');
     const widget = new GalleryWidget({
@@ -51,10 +61,11 @@ const plugin: JupyterFrontEndPlugin<void> = {
       fileChanged: app.serviceManager.contents.fileChanged,
       refreshFileBrowser: () => {
         return app.commands.execute('filebrowser:refresh');
-      }
+      },
+      serverAPI
     });
 
-    const data = await requestAPI<IGalleryReply>('gallery');
+    const data = await requestAPI<IGalleryReply>('gallery', serverAPI);
     const expectedVersion = '1.0';
     if (data.apiVersion !== expectedVersion) {
       console.warn(
@@ -89,14 +100,6 @@ const plugin: JupyterFrontEndPlugin<void> = {
       widget.title.caption = title;
       widget.show();
       app.shell.add(widget, 'left', { rank: 850 });
-    }
-
-    try {
-      const settings = await settingRegistry.load(plugin.id);
-      console.log('jupyterlab-gallery settings loaded:', settings.composite);
-    } catch (reason) {
-      console.error('Failed to load settings for jupyterlab-gallery.', reason);
-      return;
     }
   }
 };

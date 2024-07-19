@@ -27,6 +27,7 @@ export class GalleryWidget extends ReactWidget {
       openPath: (path: string) => void;
       fileChanged: Contents.IManager['fileChanged'];
       refreshFileBrowser: () => Promise<void>;
+      serverAPI: string;
     }
   ) {
     super();
@@ -61,7 +62,7 @@ export class GalleryWidget extends ReactWidget {
         if (xsrfTokenMatch) {
           args['_xsrf'] = xsrfTokenMatch[1];
         }
-        await requestAPI('pull', {
+        await requestAPI('pull', this.options.serverAPI, {
           method: 'POST',
           body: JSON.stringify(args)
         });
@@ -82,7 +83,8 @@ export class GalleryWidget extends ReactWidget {
       error => {
         // TODO
         console.error(error);
-      }
+      },
+      this.options.serverAPI
     );
     this._stream.connect(this._reloadOnFinish);
     void this._load();
@@ -105,7 +107,10 @@ export class GalleryWidget extends ReactWidget {
 
   private async _load() {
     try {
-      const data = await requestAPI<IExhibitReply>('exhibits');
+      const data = await requestAPI<IExhibitReply>(
+        'exhibits',
+        this.options.serverAPI
+      );
       this.exhibits = data.exhibits;
       const allStatusesKnown = this.exhibits.every(
         exhibit =>

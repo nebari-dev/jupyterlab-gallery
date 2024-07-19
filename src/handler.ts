@@ -10,16 +10,13 @@ import { ServerConnection } from '@jupyterlab/services';
  * @returns The response body interpreted as JSON
  */
 export async function requestAPI<T>(
-  endPoint = '',
+  endPoint: string,
+  namespace: string,
   init: RequestInit = {}
 ): Promise<T> {
   // Make request to Jupyter API
   const settings = ServerConnection.makeSettings();
-  const requestUrl = URLExt.join(
-    settings.baseUrl,
-    'jupyterlab-gallery', // API Namespace
-    endPoint
-  );
+  const requestUrl = URLExt.join(settings.baseUrl, namespace, endPoint);
 
   let response: Response;
   try {
@@ -67,14 +64,11 @@ export type IStreamMessage = IProgressStreamMessage | ITextStreamMessage;
 export function eventStream(
   endPoint = '',
   onStream: (message: IStreamMessage) => void,
-  onError: (error: Event) => void
+  onError: (error: Event) => void,
+  namespace: string
 ): EventSource {
   const settings = ServerConnection.makeSettings();
-  let requestUrl = URLExt.join(
-    settings.baseUrl,
-    'jupyterlab-gallery', // API Namespace
-    endPoint
-  );
+  let requestUrl = URLExt.join(settings.baseUrl, namespace, endPoint);
   const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
   if (xsrfTokenMatch) {
     const fullUrl = new URL(requestUrl);
