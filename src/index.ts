@@ -45,7 +45,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       console.error('Failed to load settings for jupyterlab-gallery.', reason);
       return;
     }
-    const serverAPI = settings.composite.namespace as string;
+    const serverAPI = settings.composite.endpoint as string;
 
     translator = translator ?? nullTranslator;
     const trans = translator.load('jupyterlab-gallery');
