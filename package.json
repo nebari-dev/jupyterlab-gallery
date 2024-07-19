@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab-gallery",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "description": "A JupyterLab gallery extension for presenting and downloading examples from remote repositories",
     "keywords": [
         "jupyter",
