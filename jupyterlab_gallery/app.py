@@ -4,6 +4,18 @@ from .handlers import ExhibitsHandler, GalleryHandler, PullHandler
 from .manager import GalleryManager
 
 
+try:
+    from jupyterhub.singleuser.mixins import make_singleuser_app
+except ImportError:
+
+    def make_singleuser_app(cls):
+        return cls
+
+
+# if jupyterhub is installed, apply jupyterhub patches
+ServerAppClass = make_singleuser_app(ServerApp)
+
+
 class GalleryApp(ExtensionApp):
     name = "gallery"
 
@@ -29,6 +41,8 @@ class GalleryApp(ExtensionApp):
 
         self.log.info(f"Registered {self.name} server extension")
 
+    serverapp_class = ServerAppClass
+
     @classmethod
     def make_serverapp(cls, **kwargs) -> ServerApp:
         """Instantiate the ServerApp
@@ -38,6 +52,7 @@ class GalleryApp(ExtensionApp):
         code (`kernels` service).
         """
         server_app = super().make_serverapp(**kwargs)
+        assert isinstance(server_app, ServerAppClass)
         assert len(server_app.default_services) > 1
         server_app.default_services = ("auth", "security")
         return server_app
