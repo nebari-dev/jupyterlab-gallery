@@ -39,6 +39,9 @@ test = [
 ]
 dev = ["ruff==0.4.4"]
 
+[project.scripts]
+jupyterlab-gallery = "jupyterlab_gallery:GalleryApp.launch_instance"
+
 [tool.hatch.version]
 source = "nodejs"
 
