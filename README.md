@@ -61,7 +61,11 @@ The gallery application backend can be run as a standalone server app by executi
 jupyterlab-gallery
 ```
 
-When run in JupyterHub context (with `jupyterhub` package installed), the standalone app will adopt the JupyterHub modifications to the single-user server.
+To run it as a single-user server in the JupyterHub context use:
+
+```bash
+jupyterhub-gallery
+```
 
 ## Requirements
 

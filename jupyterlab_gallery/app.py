@@ -4,19 +4,6 @@ from .handlers import ExhibitsHandler, GalleryHandler, PullHandler
 from .manager import GalleryManager
 
 
-try:
-    from jupyterhub.singleuser.mixins import make_singleuser_app
-except ImportError:
-
-    def make_singleuser_app(cls):
-        return cls
-
-
-class classproperty(property):
-    def __get__(self, owner_self, owner_cls):
-        return self.fget(owner_cls)
-
-
 class GalleryApp(ExtensionApp):
     name = "gallery"
 
@@ -39,21 +26,7 @@ class GalleryApp(ExtensionApp):
     def initialize_handlers(self):
         # setting nbapp is needed for nbgitpuller
         self.serverapp.web_app.settings["nbapp"] = self.serverapp
-
         self.log.info(f"Registered {self.name} server extension")
-
-    @classproperty
-    def serverapp_class(cls):
-        """If jupyterhub is installed, apply the jupyterhub patches,
-
-        but only do this when this property is accessed, which is when
-        the gallery is used as a standalone app.
-        """
-        if cls._server_cls is None:
-            cls._server_cls = make_singleuser_app(ServerApp)
-        return cls._server_cls
-
-    _server_cls = None
 
     @classmethod
     def make_serverapp(cls, **kwargs) -> ServerApp:
