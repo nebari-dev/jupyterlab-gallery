@@ -55,6 +55,12 @@ c.GalleryManager.exhibits = [
 
 Using the Python file enables injecting the personal access token (PAT) into the `token` stanza if you prefer to store it in an environment variable rather than in the configuration file (recommended).
 
+The gallery application backend can be run as a standalone server app by executing:
+
+```bash
+jupyterlab-gallery
+```
+
 ## Requirements
 
 - JupyterLab >= 4.0.0
