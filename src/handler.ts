@@ -1,4 +1,5 @@
 import { URLExt } from '@jupyterlab/coreutils';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 
 import { ServerConnection } from '@jupyterlab/services';
 
@@ -61,12 +62,17 @@ export interface ITextStreamMessage {
 
 export type IStreamMessage = IProgressStreamMessage | ITextStreamMessage;
 
+export interface IEventStream {
+  close: () => void;
+  promise: Promise<void>;
+}
+
 export function eventStream(
   endPoint = '',
   onStream: (message: IStreamMessage) => void,
   onError: (error: Event) => void,
   namespace: string
-): EventSource {
+): IEventStream {
   const settings = ServerConnection.makeSettings();
   let requestUrl = URLExt.join(settings.baseUrl, namespace, endPoint);
   const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
@@ -75,17 +81,29 @@ export function eventStream(
     fullUrl.searchParams.append('_xsrf', xsrfTokenMatch[1]);
     requestUrl = fullUrl.toString();
   }
-  const eventSource = new EventSource(requestUrl);
-  eventSource.addEventListener('message', event => {
-    const data = JSON.parse(event.data);
-    onStream(data);
+  const controller = new AbortController();
+  const promise = fetchEventSource(requestUrl, {
+    onmessage: event => {
+      const data = JSON.parse(event.data);
+      onStream(data);
+    },
+    onerror: error => {
+      onError(error);
+    },
+    headers: {
+      Authorization: `token ${settings.token}`
+    },
+    signal: controller.signal
   });
-  eventSource.addEventListener('error', error => {
-    onError(error);
-  });
+  const close = () => {
+    controller.abort();
+  };
   // https://bugzilla.mozilla.org/show_bug.cgi?id=833462
   window.addEventListener('beforeunload', () => {
-    eventSource.close();
+    close();
   });
-  return eventSource;
+  return {
+    close,
+    promise
+  };
 }

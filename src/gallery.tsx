@@ -12,7 +12,13 @@ import { IStream, Stream, Signal } from '@lumino/signaling';
 import { TranslationBundle } from '@jupyterlab/translation';
 import { IExhibit } from './types';
 import { IExhibitReply } from './types';
-import { requestAPI, eventStream, IStreamMessage, IProgress } from './handler';
+import {
+  requestAPI,
+  eventStream,
+  IStreamMessage,
+  IProgress,
+  IEventStream
+} from './handler';
 import { repositoryIcon } from './icons';
 
 interface IActions {
@@ -103,7 +109,7 @@ export class GalleryWidget extends ReactWidget {
     }
   };
 
-  private _eventSource: EventSource;
+  private _eventSource: IEventStream;
 
   private async _load() {
     try {

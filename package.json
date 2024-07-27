@@ -1,6 +1,6 @@
 {
     "name": "jupyterlab-gallery",
-    "version": "0.6.2",
+    "version": "0.6.3",
     "description": "A JupyterLab gallery extension for presenting and downloading examples from remote repositories",
     "keywords": [
         "jupyter",
@@ -61,7 +61,8 @@
         "@jupyterlab/application": "^4.0.0",
         "@jupyterlab/coreutils": "^6.0.0",
         "@jupyterlab/services": "^7.0.0",
-        "@jupyterlab/settingregistry": "^4.0.0"
+        "@jupyterlab/settingregistry": "^4.0.0",
+        "@microsoft/fetch-event-source": "^2.0.1"
     },
     "devDependencies": {
         "@jupyterlab/builder": "^4.0.0",
