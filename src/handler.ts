@@ -74,13 +74,7 @@ export function eventStream(
   namespace: string
 ): IEventStream {
   const settings = ServerConnection.makeSettings();
-  let requestUrl = URLExt.join(settings.baseUrl, namespace, endPoint);
-  const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
-  if (xsrfTokenMatch) {
-    const fullUrl = new URL(requestUrl);
-    fullUrl.searchParams.append('_xsrf', xsrfTokenMatch[1]);
-    requestUrl = fullUrl.toString();
-  }
+  const requestUrl = URLExt.join(settings.baseUrl, namespace, endPoint);
   const controller = new AbortController();
   const promise = fetchEventSource(requestUrl, {
     onmessage: event => {
