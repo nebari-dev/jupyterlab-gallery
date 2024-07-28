@@ -21,7 +21,7 @@ export async function requestAPI<T>(
 
   let response: Response;
   try {
-    response = await ServerConnection.makeRequest(requestUrl, init, settings);
+    response = await makeRequest(requestUrl, init, settings);
   } catch (error) {
     throw new ServerConnection.NetworkError(error as any);
   }
@@ -100,4 +100,35 @@ export function eventStream(
     close,
     promise
   };
+}
+
+function makeRequest(
+  url: string,
+  init: RequestInit,
+  settings: ServerConnection.ISettings
+): Promise<Response> {
+  // Copyright (c) Jupyter Development Team.
+  // Distributed under the terms of the Modified BSD License.
+
+  // TODO: upstream option to only pass token, not the xsrf?
+  if (url.indexOf(settings.baseUrl) !== 0) {
+    throw new Error('Can only be used for jupyter-server requests');
+  }
+  const cache = init.cache ?? settings.init.cache;
+  if (cache === 'no-store') {
+    url += (/\?/.test(url) ? '&' : '?') + new Date().getTime();
+  }
+  const request = new settings.Request(url, { ...settings.init, ...init });
+
+  // Only set the token, not the XSRF token, relying on the server's ability to
+  // determine xsrf status based on the auth token.
+  if (settings.token) {
+    request.headers.append('Authorization', `token ${settings.token}`);
+  }
+  if (!request.headers.has('Content-Type')) {
+    request.headers.set('Content-Type', 'application/json');
+  }
+  return settings.fetch.call(null, request).catch((e: TypeError) => {
+    throw new ServerConnection.NetworkError(e);
+  });
 }
