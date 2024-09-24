@@ -184,7 +184,7 @@ function Gallery(props: {
       {props.exhibits.map(exhibit => (
         <Exhibit
           trans={props.trans}
-          key={exhibit.repository}
+          key={exhibit.homepage}
           exhibit={exhibit}
           actions={props.actions}
           progressStream={props.progressStream}

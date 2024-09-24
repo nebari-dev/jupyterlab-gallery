@@ -11,15 +11,15 @@ export interface IExhibitReply {
 
 export interface IExhibit {
   // from configuration file
-  repository: string;
+  homepage?: string;
   title: string;
-  description: string;
-  icon: string;
+  description?: string;
+  icon?: string;
   // state from server
   id: number;
   isCloned: boolean;
   localPath: string;
-  revision: string;
-  lastUpdated: string;
+  revision?: string;
+  lastUpdated?: string;
   updatesAvailable?: boolean;
 }

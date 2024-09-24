@@ -1,6 +1,6 @@
 # jupyterlab-gallery
 
-![Extension status](https://img.shields.io/badge/status-draft-critical 'Not yet working')
+![Extension status](https://img.shields.io/badge/status-ready-success 'Ready to be used')
 [![Github Actions Status](https://github.com/nebari-dev/jupyterlab-gallery/workflows/Build/badge.svg)](https://github.com/nebari-dev/jupyterlab-gallery/actions/workflows/build.yml)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nebari-dev/jupyterlab-gallery/main?urlpath=lab)
 
@@ -10,7 +10,13 @@ This extension is composed of a Python package named `jupyterlab-gallery`
 for the server extension and a NPM package named `jupyterlab-gallery`
 for the frontend extension.
 
-When [`jupyterlab-new-launcher`](https://github.com/nebari-dev/jupyterlab-new-launcher) is installed, the gallery will be added as a "Gallery" section in the launcher; otherwise it will be shown in the left sidebar.
+When [`jupyterlab-launchpad`](https://github.com/nebari-dev/jupyterlab-launchpad) is installed, the gallery will be added as a "Gallery" section in the launcher:
+
+![in launchpad][in-launchpad]
+
+Otherwise it will be shown in the left sidebar.
+
+[in-launchpad]: https://raw.githubusercontent.com/nebari-dev/jupyterlab-gallery/main/ui-tests/tests/jupyterlab_gallery.spec.ts-snapshots/in-launchpad-linux.png
 
 ## Configuration
 
