@@ -167,14 +167,60 @@ test.describe('Integration with jupyterlab-launchpad', () => {
    */
   test.use({ autoGoto: false });
 
+  const EXAMPLE_CARD = 1;
+
   test('Launchpad integration', async ({ page }) => {
     await mockGalleryEndpoint(page);
     await mockExhibitsEndpoint(page);
 
     await page.goto();
 
+    // collapse the "create empty" section
+    await page.locator('.jp-Launcher-openByType summary').click();
+    // wait for animations to complete
+    await page.waitForTimeout(400);
+
     const launcher = page.locator('.jp-LauncherBody');
     expect(await launcher.screenshot()).toMatchSnapshot('in-launchpad.png');
+  });
+
+  test('On hover - fresh', async ({ page }) => {
+    await mockGalleryEndpoint(page);
+    await mockExhibitsEndpoint(page, { exhibits: [niceExhibits[EXAMPLE_CARD]] });
+
+    await page.goto();
+
+    const card = page.locator('.jp-Exhibit').first();
+    await card.hover();
+    expect(await card.screenshot()).toMatchSnapshot('on-hover-fresh.png');
+  });
+
+  test('On hover - cloned', async ({ page }) => {
+    await mockGalleryEndpoint(page);
+    await mockExhibitsEndpoint(page, {
+      exhibits: [{ ...niceExhibits[EXAMPLE_CARD], isCloned: true }]
+    });
+
+    await page.goto();
+
+    const card = page.locator('.jp-Exhibit').first();
+    await card.hover();
+    expect(await card.screenshot()).toMatchSnapshot('on-hover-cloned.png');
+  });
+
+  test('On hover - updates pending', async ({ page }) => {
+    await mockGalleryEndpoint(page);
+    await mockExhibitsEndpoint(page, {
+      exhibits: [{ ...niceExhibits[EXAMPLE_CARD], isCloned: true, updatesAvailable: true }]
+    });
+
+    await page.goto();
+
+    const card = page.locator('.jp-Exhibit').first();
+    await card.hover();
+    expect(await card.screenshot()).toMatchSnapshot(
+      'on-hover-updates-pending.png'
+    );
   });
 
   test('Odd cases', async ({ page }) => {
@@ -182,7 +228,7 @@ test.describe('Integration with jupyterlab-launchpad', () => {
     await mockExhibitsEndpoint(page, { exhibits: edgeCaseExhibits });
     await page.goto();
 
-    const launcher = page.locator('.jp-Gallery');
-    expect(await launcher.screenshot()).toMatchSnapshot('odd-cases.png');
+    const gallery = page.locator('.jp-Gallery');
+    expect(await gallery.screenshot()).toMatchSnapshot('odd-cases.png');
   });
 });

@@ -18,6 +18,26 @@ Otherwise it will be shown in the left sidebar.
 
 [in-launchpad]: https://raw.githubusercontent.com/nebari-dev/jupyterlab-gallery/main/ui-tests/tests/jupyterlab_gallery.spec.ts-snapshots/in-launchpad-linux.png
 
+## Usage
+
+Hover over the tile with exhibit that you are interested in to reveal a "Download" button:
+
+![hover before cloning][hover-fresh]
+
+Clicking this button will start the download process which you can monitor by tracking the progress bar that shows up in the tile.
+
+After cloning has completed, hover over the tile again to reveal "Open Folder" and "Update" buttons:
+
+![hover after cloning][hover-cloned]
+
+The update buttons becomes active once new version of the cloned repository becomes available (this is once new commits are pushed to the tracked branch):
+
+![hover with updates][hover-update]
+
+[hover-fresh]: https://raw.githubusercontent.com/nebari-dev/jupyterlab-gallery/main/ui-tests/tests/jupyterlab_gallery.spec.ts-snapshots/on-hover-fresh-linux.png
+[hover-cloned]: https://raw.githubusercontent.com/nebari-dev/jupyterlab-gallery/main/ui-tests/tests/jupyterlab_gallery.spec.ts-snapshots/on-hover-cloned-linux.png
+[hover-update]: https://raw.githubusercontent.com/nebari-dev/jupyterlab-gallery/main/ui-tests/tests/jupyterlab_gallery.spec.ts-snapshots/on-hover-updates-pending-linux.png
+
 ## Configuration
 
 You can configure the gallery with the following traitlets:
