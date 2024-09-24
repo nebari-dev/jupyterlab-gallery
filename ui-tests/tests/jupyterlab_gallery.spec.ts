@@ -186,7 +186,9 @@ test.describe('Integration with jupyterlab-launchpad', () => {
 
   test('On hover - fresh', async ({ page }) => {
     await mockGalleryEndpoint(page);
-    await mockExhibitsEndpoint(page, { exhibits: [niceExhibits[EXAMPLE_CARD]] });
+    await mockExhibitsEndpoint(page, {
+      exhibits: [niceExhibits[EXAMPLE_CARD]]
+    });
 
     await page.goto();
 
@@ -211,7 +213,13 @@ test.describe('Integration with jupyterlab-launchpad', () => {
   test('On hover - updates pending', async ({ page }) => {
     await mockGalleryEndpoint(page);
     await mockExhibitsEndpoint(page, {
-      exhibits: [{ ...niceExhibits[EXAMPLE_CARD], isCloned: true, updatesAvailable: true }]
+      exhibits: [
+        {
+          ...niceExhibits[EXAMPLE_CARD],
+          isCloned: true,
+          updatesAvailable: true
+        }
+      ]
     });
 
     await page.goto();
