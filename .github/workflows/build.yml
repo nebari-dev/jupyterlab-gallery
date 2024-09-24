@@ -116,7 +116,7 @@ jobs:
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_gallery*.whl
+        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_gallery*.whl jupyterlab-launchpad
 
     - name: Install dependencies
       working-directory: ui-tests
