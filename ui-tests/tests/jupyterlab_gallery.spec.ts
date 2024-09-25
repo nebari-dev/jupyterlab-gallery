@@ -243,7 +243,8 @@ test.describe('Integration with jupyterlab-launchpad', () => {
     await mockGalleryEndpoint(page, { title: 'Edge cases' });
     await mockExhibitsEndpoint(page, { exhibits: edgeCaseExhibits });
     await page.goto();
-
+    // wait for pictures to settle
+    await page.waitForTimeout(400);
     const gallery = page.locator('.jp-Gallery');
     expect(await gallery.screenshot()).toMatchSnapshot('odd-cases.png');
   });
