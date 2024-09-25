@@ -93,6 +93,12 @@ To run it as a single-user server in the JupyterHub context use:
 jupyterhub-gallery
 ```
 
+For additional help see the `GalleryManager` section in the output of:
+
+```bash
+jupyterlab-gallery --help-all
+```
+
 ## Requirements
 
 - JupyterLab >= 4.0.0
