@@ -24,13 +24,13 @@ Hover over the tile with exhibit that you are interested in to reveal a "Downloa
 
 ![hover before cloning][hover-fresh]
 
-Clicking this button will start the download process which you can monitor by tracking the progress bar that shows up in the tile.
+Clicking this button will start the download process, which you can monitor by tracking the progress bar that shows up in the tile.
 
 After cloning has completed, hover over the tile again to reveal "Open Folder" and "Update" buttons:
 
 ![hover after cloning][hover-cloned]
 
-The update buttons becomes active once new version of the cloned repository becomes available (this is once new commits are pushed to the tracked branch):
+The update button becomes active once a new version of the cloned repository becomes available (once new commits are pushed to the tracked branch):
 
 ![hover with updates][hover-update]
 
