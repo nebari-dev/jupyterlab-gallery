@@ -61,7 +61,8 @@ const niceExhibitConfigs: IServerSideExhibit[] = [
 
 const edgeCaseExhibitConfigs: IServerSideExhibit[] = [
   {
-    git: 'https://github.com/krassowski/fake-repo.git',
+    git: 'https://github.com/krassowski/example-private-repository.git',
+    homepage: 'https://github.com/krassowski/example-private-repository/',
     title: 'Private repository'
   },
   {
@@ -181,6 +182,10 @@ test.describe('Integration with jupyterlab-launchpad', () => {
     await page.waitForTimeout(400);
 
     const launcher = page.locator('.jp-LauncherBody');
+
+    // move the mouse away from the summary button
+    await launcher.hover();
+
     expect(await launcher.screenshot()).toMatchSnapshot('in-launchpad.png');
   });
 
