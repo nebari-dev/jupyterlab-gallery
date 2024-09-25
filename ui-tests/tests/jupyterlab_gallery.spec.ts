@@ -183,8 +183,10 @@ test.describe('Integration with jupyterlab-launchpad', () => {
 
     const launcher = page.locator('.jp-LauncherBody');
 
+    const mainLogo = page.locator('#jp-MainLogo');
+
     // move the mouse away from the summary button
-    await launcher.hover();
+    await mainLogo.hover();
 
     expect(await launcher.screenshot()).toMatchSnapshot('in-launchpad.png');
   });
