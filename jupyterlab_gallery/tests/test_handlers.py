@@ -1,5 +1,6 @@
 import json
 from unittest import mock
+from pathlib import Path
 import pytest
 
 from jupyter_server.utils import url_path_join
@@ -12,6 +13,47 @@ async def test_exhibits(jp_fetch):
     assert response.code == 200
     payload = json.loads(response.body)
     assert isinstance(payload["exhibits"], list)
+
+
+@pytest.mark.parametrize(
+    "exhibit",
+    [
+        {
+            "git": "https://github.com/nebari-dev/nebari.git",
+            "homepage": "https://github.com/nebari-dev/nebari",
+            "isCloned": True
+        },
+    ],
+)
+async def test_exhibits_post(jp_fetch, exhibit):
+    update = {
+        "new_path": "gallery",
+        "old_path": "examples"
+    }
+
+    def mocked_exists(path_instance):
+        if str(path_instance) in ["gallery", "gallery/nebari"]:
+            return True
+        else:
+            return False
+
+    def mocked_get_exhibit_data(_, exhibit):
+        output = {
+            "homepage": exhibit["homepage"],
+            "icon": None,
+            "localPath": exhibit["destination"],
+            "isCloned": True,
+        }
+        return output
+    with mock.patch.multiple(GalleryManager, 
+                        exhibits=[exhibit],
+                        destination=Path("example"),
+                        get_exhibit_data=mocked_get_exhibit_data):
+        with mock.patch.object(Path, "exists", mocked_exists):
+            response = await jp_fetch("jupyterlab-gallery", "exhibits", method="POST", body=json.dumps(update))
+    assert response.code == 200
+    payload = json.loads(response.body)
+    assert payload["exhibits"][0]["localPath"] == "gallery"
 
 
 @pytest.mark.parametrize(

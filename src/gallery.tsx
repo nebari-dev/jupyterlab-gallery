@@ -24,6 +24,7 @@ import { repositoryIcon } from './icons';
 interface IActions {
   download(exhibit: IExhibit): Promise<void>;
   open(exhibit: IExhibit): Promise<void>;
+  updateLocalPath(new_path: string): Promise<void>;
 }
 
 export class GalleryWidget extends ReactWidget {
@@ -73,11 +74,30 @@ export class GalleryWidget extends ReactWidget {
           body: JSON.stringify(args)
         });
         await done;
+      },
+      updateLocalPath: async (new_path: string) => {
+        const xsrfTokenMatch = document.cookie.match('\\b_xsrf=([^;]*)\\b');
+        const args: Record<string, string> = {
+          new_path: new_path
+        };
+        if (xsrfTokenMatch) {
+          args['_xsrf'] = xsrfTokenMatch[1];
+        }
+        await requestAPI('exhibits', this.options.serverAPI, {
+          method: 'POST',
+          body: JSON.stringify(args)
+        });
       }
     };
     // if user deletes a directory, reload the state
     fileChanged.connect((_, args) => {
       if (args.type === 'delete') {
+        this._load();
+      } else if (args.type === 'rename') {
+        const newPath = args.newValue?.path;
+        if (newPath) {
+          this._actions.updateLocalPath(newPath);
+        }
         this._load();
       }
     });

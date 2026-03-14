@@ -55,6 +55,11 @@ class GalleryManager(LoggingConfigurable):
                 "depth": Int(
                     default_value=None, help="Depth of the clone", allow_none=True
                 ),
+                "destination": Unicode(
+                    help="Folder to clone the repository into", 
+                    allow_none=True,
+                    default_value=None
+                )
                 # other ideas: `path_in_repository`, `documentation_url`
             }
         ),
@@ -82,9 +87,29 @@ class GalleryManager(LoggingConfigurable):
     )
 
     def get_local_path(self, exhibit) -> Path:
-        clone_destination = Path(self.destination)
+        if exhibit.get("destination") is not None:
+            clone_destination = Path(exhibit["destination"])
+        else:
+            clone_destination = Path(self.destination) 
         repository_name = extract_repository_name(exhibit["git"])
         return clone_destination / repository_name
+    
+    def update_exhibit_paths(self, new_path: Path):
+        updated_exhibits = []
+        for exhibit in self.exhibits:
+            local_path = self.get_local_path(exhibit)
+            if not local_path.exists():
+                if new_path.exists():
+                    repository_name = extract_repository_name(exhibit["git"])
+                    if new_path.name == repository_name:
+                        exhibit["destination"] = str(new_path.parent)
+                    else:
+                        potential_path = new_path / repository_name
+                        if potential_path.exists():
+                            exhibit["destination"] = str(new_path)
+            updated_exhibits.append(exhibit)
+        self.exhibits = updated_exhibits
+        return updated_exhibits
 
     def _check_updates(self, exhibit):
         local_path = self.get_local_path(exhibit)
