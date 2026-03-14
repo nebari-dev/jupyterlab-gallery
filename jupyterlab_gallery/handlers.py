@@ -36,7 +36,8 @@ class GalleryHandler(BaseHandler):
 
 class ExhibitsHandler(BaseHandler):
     @tornado.web.authenticated
-    def get(self):
+    async def get(self):
+        await self.gallery_manager.get_exhibit_url_data()
         self.finish(
             json.dumps(
                 {

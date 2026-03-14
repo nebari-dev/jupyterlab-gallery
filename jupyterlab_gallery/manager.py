@@ -3,9 +3,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from threading import Thread
+import json
 
 from traitlets.config.configurable import LoggingConfigurable
 from traitlets import Dict, List, Unicode, Bool, Int
+from tornado.httpclient import AsyncHTTPClient
 
 from .git_utils import (
     extract_repository_owner,
@@ -63,6 +65,13 @@ class GalleryManager(LoggingConfigurable):
         default_value=[],
     )
 
+    exhibits_url = Unicode(
+        help="A url to a json or yaml file containing exhibits",
+        default_value=None,
+        allow_none=True,
+        config=True
+    )
+
     destination = Unicode(
         help="The directory into which the exhibits will be cloned",
         default_value="gallery",
@@ -92,6 +101,21 @@ class GalleryManager(LoggingConfigurable):
             account=exhibit.get("account"), token=exhibit.get("token")
         ):
             self._has_updates[local_path] = has_updates(local_path)
+
+    async def get_exhibit_url_data(self):
+        if self.exhibits_url:
+            http_client = AsyncHTTPClient()
+            response = await http_client.fetch(self.exhibits_url)
+            if not response.code == 200:
+                raise RuntimeError(
+                    f"Unable to fetch exhibits from {self.exhibits_url}"
+                )
+            content = json.loads(response.body)
+            content_exhibits = content.get("exhibits", [])
+            for exhibit in content_exhibits:
+                git = exhibit["git"]
+                if not any(e["git"] == git for e in self.exhibits):
+                    self.exhibits.append(exhibit)
 
     def get_exhibit_data(self, exhibit):
         data = {}

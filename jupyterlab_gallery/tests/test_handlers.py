@@ -1,10 +1,37 @@
 import json
 from unittest import mock
 import pytest
+import tornado
+import json
 
 from jupyter_server.utils import url_path_join
 
 from jupyterlab_gallery.manager import GalleryManager
+
+
+@pytest.fixture
+def exhibits_server(jp_asyncio_loop):
+    async def run_server():
+        content = {"exhibits": [
+            {
+                "git": "https://github.com/nebari-dev/jupyterlab-gallery.git",
+                "homepage": "https://github.com/nebari-dev/nebari",
+                "title": "jupyterlab-gallery"
+            }
+        ]}
+
+        class ExhibitsJsonHandler(tornado.web.RequestHandler):
+            def get(self):
+                self.write(content)
+
+        app = tornado.web.Application([(r"/exhibits.json", ExhibitsJsonHandler)])
+
+        server = app.listen(8030)
+        return server
+        
+    server = jp_asyncio_loop.run_until_complete(run_server())
+    yield "http://127.0.0.1:8030"
+    server.stop()
 
 
 async def test_exhibits(jp_fetch):
@@ -12,6 +39,15 @@ async def test_exhibits(jp_fetch):
     assert response.code == 200
     payload = json.loads(response.body)
     assert isinstance(payload["exhibits"], list)
+
+async def test_exhibits_with_exhibits_url(jp_fetch, exhibits_server):
+    url = exhibits_server
+    with mock.patch.object(GalleryManager, "exhibits_url", url + "/exhibits.json"):
+        response = await jp_fetch("jupyterlab-gallery", "exhibits")
+    assert response.code == 200
+    payload = json.loads(response.body)
+    assert len(payload["exhibits"]) == 1
+    assert payload["exhibits"][0]["title"] == "jupyterlab-gallery"
 
 
 @pytest.mark.parametrize(
