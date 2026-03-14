@@ -81,6 +81,12 @@ class GalleryManager(LoggingConfigurable):
         config=True,
     )
 
+    clone_timeout = Int(
+        help="Timeout for cloning a repository (in seconds)",
+        default_value=15 * 60,
+        config=True,
+    )
+
     def get_local_path(self, exhibit) -> Path:
         clone_destination = Path(self.destination)
         repository_name = extract_repository_name(exhibit["git"])

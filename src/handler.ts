@@ -56,6 +56,7 @@ export interface IProgressStreamMessage {
 
 export interface ITextStreamMessage {
   output?: string;
+  message: string;
   phase: 'error' | 'finished' | 'syncing';
   exhibit_id: number;
 }

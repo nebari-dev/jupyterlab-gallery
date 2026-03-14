@@ -1,10 +1,12 @@
 import json
 from unittest import mock
 import pytest
+import threading
 
 from jupyter_server.utils import url_path_join
 
 from jupyterlab_gallery.manager import GalleryManager
+from jupyterlab_gallery.gitpuller import ProgressGitPuller
 
 
 async def test_exhibits(jp_fetch):
@@ -61,3 +63,24 @@ async def test_pull_token_can_be_used_instead_of_xsrf(
     assert response.code == 406
     payload = json.loads(response.body)
     assert payload["message"] == "exhibit_id 100 not found"
+
+
+@pytest.mark.asyncio
+async def test_clone_timeout():
+    
+    def slow_clone(*args, **kwargs):
+        threading.Event().wait(timeout=2)  # Simulate slow operation
+        
+    with mock.patch('git.Repo.clone_from', side_effect=slow_clone):
+        with mock.patch('nbgitpuller.GitPuller.resolve_default_branch', return_value="main"):
+            puller = ProgressGitPuller(
+                "https://github.com/test/repo.git",
+                "/tmp/test-repo",
+                token=None,
+                account=None,
+                branch=None,
+                timeout=1  # 1 second timeout
+            )
+            
+            with pytest.raises(TimeoutError):
+                list(puller.initialize_repo())

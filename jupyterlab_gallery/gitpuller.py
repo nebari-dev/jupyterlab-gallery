@@ -64,10 +64,11 @@ class CloneProgress(git.RemoteProgress):
 
 class ProgressGitPuller(GitPuller):
     def __init__(
-        self, git_url, repo_dir, token: Optional[str], account: Optional[str], **kwargs
+        self, git_url, repo_dir, token: Optional[str], account: Optional[str], timeout: Optional[int], **kwargs
     ):
         self._token = token
         self._account = account
+        self.timeout = timeout
         # it will attempt to resolve default branch which requires credentials too
         with git_credentials(token=self._token, account=self._account):
             super().__init__(git_url, repo_dir, **kwargs)
@@ -75,6 +76,17 @@ class ProgressGitPuller(GitPuller):
     def initialize_repo(self):
         logging.info("Repo {} doesn't exist. Cloning...".format(self.repo_dir))
         progress = CloneProgress()
+
+        # Create an event to signal timeout
+        timeout_event = threading.Event()
+        
+        def on_timeout():
+            timeout_event.set()
+            progress.queue.put(TimeoutError(
+                f"Clone operation timed out after {self.timeout} seconds"
+            ))
+
+        timer = threading.Timer(self.timeout, on_timeout)
 
         def clone_task():
             with git_credentials(token=self._token, account=self._account):
@@ -87,18 +99,24 @@ class ProgressGitPuller(GitPuller):
                         progress=progress,
                     )
                 except Exception as e:
-                    progress.queue.put(e)
+                    if not timeout_event.is_set():
+                        progress.queue.put(e)
                 finally:
-                    progress.queue.put(None)
+                    timer.cancel()
+                    if not timeout_event.is_set():
+                        progress.queue.put(None)
 
-        threading.Thread(target=clone_task).start()
-        # TODO: add configurable timeout
-        # timeout = 60
+        timer.start()
+        clone_task = threading.Thread(target=clone_task)
+        clone_task.start()
 
         while True:
-            item = progress.queue.get(True)  # , timeout)
+            item = progress.queue.get(True)
             if item is None:
                 break
+            if isinstance(item, TimeoutError):
+                clone_task.join(timeout=0)
+                raise item
             yield item
 
         logging.info("Repo {} initialized".format(self.repo_dir))
@@ -191,6 +209,7 @@ class SyncHandlerBase(JupyterHandler):
                 # our additions
                 token=token,
                 account=account,
+                timeout=self.gallery_manager.clone_timeout
             )
 
             def pull():
@@ -200,6 +219,7 @@ class SyncHandlerBase(JupyterHandler):
                     # Sentinel when we're done
                     q.put_nowait(None)
                 except Exception as e:
+                    q.put_nowait(e)
                     raise e
 
             self.gp_thread = threading.Thread(target=pull)

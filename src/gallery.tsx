@@ -221,6 +221,8 @@ function Exhibit(props: {
             'Could not download',
             message.output ?? 'Unknown error'
           );
+          setProgress(null);
+          setProgressMessage(message.message);
           break;
         case 'progress':
           setProgress(message.output);
@@ -269,7 +271,6 @@ function Exhibit(props: {
                     ...(progress as any),
                     state: 'error'
                   });
-                  setProgressMessage('');
                 }
               }}
             >
